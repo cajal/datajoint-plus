@@ -147,13 +147,16 @@ def check_if_latest_version(source='github', return_latest=False):
         github
     :param return_latest: (bool) If True, returns the latest version
     """
-    if source == 'github':
-        _latest_version_text = re.search('__version__.*', requests.get(f"https://raw.githubusercontent.com/cajal/datajoint-plus/main/datajoint_plus/version.py").text).group()
-        latest_version = _latest_version_text.split('=')[1].strip(' "'" '") if len(_latest_version_text.split('='))>1 else _latest_version_text.strip(' "'" '")
-        if __version__ != latest_version:
-            logging.warning(f'Imported datajoint_plus version, {__version__} does not match the latest version on Github, {latest_version}.')
-    else:
-        raise AttributeError('Source not recognized. "github" is the only supported source')
+    try:
+        if source == 'github':
+            _latest_version_text = re.search('__version__.*', requests.get(f"https://raw.githubusercontent.com/cajal/datajoint-plus/main/datajoint_plus/version.py").text).group()
+            latest_version = _latest_version_text.split('=')[1].strip(' "'" '") if len(_latest_version_text.split('='))>1 else _latest_version_text.strip(' "'" '")
+            if __version__ != latest_version:
+                logging.warning(f'Imported datajoint_plus version, {__version__} does not match the latest version on Github, {latest_version}.')
+        else:
+            raise AttributeError('Source not recognized. "github" is the only supported source')
 
-    if return_latest:
-        return latest_version
+        if return_latest:
+            return latest_version
+    except:
+        logging.warning(f'DataJointPlus version check failed.')
