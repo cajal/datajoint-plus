@@ -7,7 +7,7 @@ import logging
 import traceback
 
 import datajoint as dj
-
+from datajoint.user_tables import UserTable
 from .base import Base
 from .user_tables import Computed, Imported, Lookup, Manual, Part
 from .utils import enable_datajoint_flags, register_externals
@@ -30,10 +30,10 @@ def add_datajoint_plus(module):
             if name in ['key_source', '_master', 'master']:
                 continue
             obj = getattr(module, name)
-            if inspect.isclass(obj) and issubclass(obj, dj.UserTable) and not issubclass(obj, Base):
+            if inspect.isclass(obj) and issubclass(obj, UserTable) and not issubclass(obj, Base):
                 bases = []
                 for b in obj.__bases__:
-                    if issubclass(b, dj.UserTable):
+                    if issubclass(b, UserTable):
                         b = djp_mapping[b.__name__]
                     bases.append(b)
                 obj.__bases__ = tuple(bases)
