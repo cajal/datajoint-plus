@@ -88,6 +88,7 @@ class Tables(Table):
                     assert ~((table_id is None) and (full_table_name is None)), 'Provide table_id or full_table_name to delete.'
                     assert len(restr) == 1, 'There should be only one entry to delete.'
                     restr.delete()
+                    return
 
                 if (table_id is None) and (full_table_name is None):
                     return self
