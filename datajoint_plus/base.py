@@ -17,7 +17,7 @@ from ipywidgets.widgets import HBox, Label, Output
 
 from .enum import JoinMethod
 from .errors import OverwriteError, ValidationError
-from .hash import generate_hash
+from .hash import generate_hash, generate_table_id
 from .heading import parse_definition, reform_definition
 from .utils import classproperty, format_rows_to_df, format_table_name
 from .validation import (_is_overwrite_validated,
@@ -104,7 +104,7 @@ class Base:
 
     @classproperty
     def table_id(cls):
-        return generate_hash([{'full_table_name': cls.full_table_name}])
+        return generate_table_id(cls.full_table_name)
 
     @classproperty
     def hash_len(cls):
