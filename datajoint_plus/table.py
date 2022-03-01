@@ -62,7 +62,7 @@ class Tables(Table):
         """
         try:
             table_id_restr = {'table_id': table_id} if table_id is not None else {}
-            full_table_name_restr = {'full_table_name': full_table_name} if table_id is not None else {}
+            full_table_name_restr = {'full_table_name': full_table_name} if full_table_name is not None else {}
 
             if action is not None:
                 if action == 'add':
