@@ -6,7 +6,7 @@ from copy import copy
 import logging
 
 from datajoint.table import Table
-from . import free_table
+from . import free_table, AndList
 from datajoint_plus.hash import generate_table_id
 
 from .version import __version__ as version
@@ -82,20 +82,17 @@ class Tables(Table):
                 full_table_name_restr = {'full_table_name': full_table_name} if full_table_name is not None else None
                 
                 restr = [r for r in [table_id_restr, full_table_name_restr] if r is not None]
-                
-                entry = copy(self)
-                for r in restr:
-                    entry &= r 
+                restr = self & AndList(restr)
 
                 if action == 'delete':
                     assert ~((table_id is None) and (full_table_name is None)), 'Provide table_id or full_table_name to delete.'
-                    assert len(entry) == 1, 'There should be only one entry to delete.'
-                    (self & entry).delete()
+                    assert len(restr) == 1, 'There should be only one entry to delete.'
+                    (self & restr).delete()
 
                 if (table_id is None) and (full_table_name is None):
                     return self
 
-                full_table_name = entry.fetch1('full_table_name')
+                full_table_name = restr.fetch1('full_table_name')
                 return free_table(self.connection, full_table_name)
 
         except Exception as e:
