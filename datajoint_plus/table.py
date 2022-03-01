@@ -2,6 +2,7 @@
 Extensions of DataJoint Table
 """
 
+from copy import copy
 import logging
 
 from datajoint.table import Table
@@ -82,18 +83,19 @@ class Tables(Table):
                 
                 restr = [r for r in [table_id_restr, full_table_name_restr] if r is not None]
                 
+                entry = copy(self)
                 for r in restr:
-                    self &= r 
+                    entry &= r 
 
                 if action == 'delete':
                     assert ~((table_id is None) and (full_table_name is None)), 'Provide table_id or full_table_name to delete.'
-                    assert len(self) == 1, 'There should be only one entry to delete.'
-                    self.delete()
+                    assert len(entry) == 1, 'There should be only one entry to delete.'
+                    (self & entry).delete()
 
                 if (table_id is None) and (full_table_name is None):
                     return self
 
-                full_table_name = self.fetch1('full_table_name')
+                full_table_name = entry.fetch1('full_table_name')
                 return free_table(self.connection, full_table_name)
 
         except Exception as e:
