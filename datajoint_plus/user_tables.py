@@ -5,7 +5,7 @@ import datajoint as dj
 from datajoint.user_tables import UserTable
 
 from .base import MasterBase, PartBase
-from .table import TableLog
+from .table import Tables
 
 
 class UserTable(UserTable):
@@ -20,7 +20,7 @@ class UserTable(UserTable):
     @property
     def _tables(self):
         if self._tables_ is None:
-            self._tables_ = TableLog(self.connection, database=self.database)
+            self._tables_ = Tables(self.connection, database=self.database)
         return self._tables_
 
     
