@@ -71,14 +71,19 @@ class Tables(Table):
                 else:
                     assert table_id == generate_table_id(full_table_name), 'Provided table_id does not match generated table_id.'
 
-                self.insert1(
-                    dict(
-                        table_id=table_id, 
-                        full_table_name=full_table_name, 
-                        exists=1,
-                        djp_version=version),
-                        replace=True
-                    )   
+                restr = self & {'table_id': table_id}
+
+                if len(restr) == 0:
+                    self.insert1(
+                        dict(
+                            table_id=table_id, 
+                            full_table_name=full_table_name, 
+                            exists=1,
+                            djp_version=version
+                            ),
+                        )
+                if len(restr) == 1:
+                    self._update('exists', 1)
       
             else:
                 table_id_restr = f'table_id LIKE "{table_id}%"' if table_id is not None else None
@@ -102,6 +107,16 @@ class Tables(Table):
         except Exception as e:
             logging.error(e)
             logging.info('failure interacting with ~tables')
+
+    @property
+    def exists(self):
+        """Returns existing tables"""
+        return self & {'exists': 1}
+
+    @property
+    def deleted(self):
+        """Returns deleted tables"""
+        return self & {'exists': 0}
 
     def delete(self):
         """bypass interactive prompts and cascading dependencies"""
