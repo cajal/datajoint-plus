@@ -77,8 +77,7 @@ class Tables(Table):
                         full_table_name=full_table_name, 
                         exists=1,
                         djp_version=version),
-                        skip_duplicates=True, 
-                        # replace=True
+                        replace=True
                     )   
       
             else:
