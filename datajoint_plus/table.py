@@ -83,7 +83,7 @@ class Tables(Table):
                             ),
                         )
                 if len(restr) == 1:
-                    self._update('exists', 1)
+                    restr._update('exists', 1)
       
             else:
                 table_id_restr = f'table_id LIKE "{table_id}%"' if table_id is not None else None
