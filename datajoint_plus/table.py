@@ -33,10 +33,10 @@ class Tables(Table):
         self.database = database
         self._connection = arg
         self._definition = f"""    # tables in `{database}`
-        table_id       :varchar(32)  # unique hash of full_table_name
+        table_id        :varchar(32)  # unique hash of full_table_name
         ---
         full_table_name : varchar(450) # name of table
-        exists : tinyint  # 1 - table exists in schema; 0 - table no longer exists
+        exists          : tinyint  # 1 - table exists in schema; 0 - table no longer exists
         djp_version     : varchar(32)  # version of datajoint_plus used to generate table_id
         timestamp = CURRENT_TIMESTAMP : timestamp # timestamp of entry (not necessarily when table was created)
         """
@@ -78,8 +78,7 @@ class Tables(Table):
                         exists=1,
                         djp_version=version),
                         skip_duplicates=True, 
-                        ignore_extra_fields=True,
-                        replace=True
+                        # replace=True
                     )   
       
             else:
