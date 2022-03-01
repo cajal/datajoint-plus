@@ -9,12 +9,20 @@ from .table import Tables
 
 
 class UserTable(UserTable):
-    _tables_ = None
+    """
+    Extensions to DataJoint UserTable
+    """
     
+    _tables_ = None
+
     def declare(self, context=None):
         super().declare(context=context)
         self._tables(self.table_id, self.full_table_name, action='add')
     
+    def drop(self):
+        super().drop()
+        self._tables(self.table_id, action='delete')
+
     def drop_quick(self):
         super().drop_quick()
         self._tables(self.table_id, action='delete')
