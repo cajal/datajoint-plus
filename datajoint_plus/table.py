@@ -68,6 +68,8 @@ class Tables(Table):
                 
                 if table_id is None:
                     table_id = generate_table_id(full_table_name)
+                else:
+                    assert table_id == generate_table_id(full_table_name), 'Provided table_id does not match generated table_id.'
 
                 self.insert1(
                     dict(

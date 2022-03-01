@@ -9,7 +9,7 @@ import datajoint as dj
 from .compatibility import add_datajoint_plus
 from .utils import enable_datajoint_flags, register_externals, split_full_table_name, reform_full_table_name
 from .table import Tables
-from .hash import generate_hash, generate_table_id
+from .hash import generate_table_id
 
 
 class Schema(dj.Schema):
