@@ -15,10 +15,10 @@ __all__ = ['__version__',
 
 from datajoint import FreeTable as free_table
 
-from .compatibility import (DataJointPlusModule, add_datajoint_plus,
-                            reassign_master_attribute)
+from .compatibility import add_datajoint_plus, reassign_master_attribute
 from .hash import generate_hash, validate_and_generate_hash
 from .heading import parse_definition, reform_definition
+from .schema import DataJointPlusModule
 from .user_tables import Computed, Imported, Lookup, Manual, Part
 from .utils import (add_objects, check_if_latest_version,
                     enable_datajoint_flags, format_table_name, make_store_dict,
