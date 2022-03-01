@@ -9,7 +9,7 @@ import datajoint as dj
 from .compatibility import add_datajoint_plus
 from .utils import enable_datajoint_flags, register_externals, split_full_table_name, reform_full_table_name
 from .table import Tables
-
+from .hash import generate_hash, generate_table_id
 class Schema(dj.Schema):
     """
     Extension of dj.Schema that adds a table log with hashes. 
@@ -18,6 +18,8 @@ class Schema(dj.Schema):
         super().__init__(schema_name=schema_name, context=context, connection=connection, create_schema=create_schema, create_tables=create_tables)
 
         self._tables = None
+        for table_name in self.list_tables():
+            self._tables(generate_table_id(reform_full_table_name(self.database, table_name), action='add'))
 
     @property
     def tables(self):
