@@ -5,7 +5,8 @@ Extensions of DataJoint Table
 import logging
 
 from datajoint.table import Table
-from numpy import full
+from . import free_table
+from datajoint_plus.hash import generate_table_id
 
 from .version import __version__ as version
 
@@ -51,7 +52,7 @@ class Tables(Table):
     def table_name(self):
         return '~tables'
 
-    def __call__(self, table_id, full_table_name=None, action=None):
+    def __call__(self, table_id=None, full_table_name=None, action=None):
         """
         :param table_id: unique ID of table to insert
         :param full_table_name: full table name (database + table)
@@ -60,9 +61,16 @@ class Tables(Table):
             delete - deletes table from log
         """
         try:
+            table_id_restr = {'table_id': table_id} if table_id is not None else {}
+            full_table_name_restr = {'full_table_name': full_table_name} if table_id is not None else {}
+
             if action is not None:
                 if action == 'add':
                     assert full_table_name is not None, 'full_table_name needed to add table'
+                    
+                    if table_id is None:
+                        table_id = generate_table_id(full_table_name)
+
                     self.insert1(
                         dict(
                             table_id=table_id, 
@@ -72,9 +80,12 @@ class Tables(Table):
                             ignore_extra_fields=True
                         )   
                 if action == 'delete':
-                    (self & {'table_id': table_id}).delete()
+                    assert (table_id is None) ^ (full_table_name is None), 'Provide either table_id or full_table_name.'
+                    
+                    (self & table_id_restr & full_table_name_restr).delete()
             else:
-                return self & {'table_id': table_id}
+                full_table_name = (self & table_id_restr & full_table_name_restr).fetch1('full_table_name')
+                return free_table(self.connection, full_table_name)
 
         except Exception as e:
             logging.error(e)
