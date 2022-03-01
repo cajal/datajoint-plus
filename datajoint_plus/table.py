@@ -35,7 +35,8 @@ class Tables(Table):
         self._definition = f"""    # tables in `{database}`
         table_id       :varchar(32)  # unique hash of full_table_name
         ---
-        full_table_name : varchar(450) # name of table 
+        full_table_name : varchar(450) # name of table
+        exists : tinyint  # 1 - table exists in schema; 0 - table no longer exists
         djp_version     : varchar(32)  # version of datajoint_plus used to generate table_id
         timestamp = CURRENT_TIMESTAMP : timestamp # timestamp of entry (not necessarily when table was created)
         """
@@ -72,9 +73,11 @@ class Tables(Table):
                     dict(
                         table_id=table_id, 
                         full_table_name=full_table_name, 
+                        exists=1,
                         djp_version=version),
                         skip_duplicates=True, 
-                        ignore_extra_fields=True
+                        ignore_extra_fields=True,
+                        replace=True
                     )   
       
             else:
@@ -87,7 +90,7 @@ class Tables(Table):
                 if action == 'delete':
                     assert ~((table_id is None) and (full_table_name is None)), 'Provide table_id or full_table_name to delete.'
                     assert len(restr) == 1, 'There should be only one entry to delete.'
-                    restr.delete()
+                    restr._update('exists', 0)
                     return
 
                 if (table_id is None) and (full_table_name is None):
