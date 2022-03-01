@@ -19,7 +19,8 @@ class Schema(dj.Schema):
 
         self._tables = None
         for table_name in self.list_tables():
-            self._tables(generate_table_id(reform_full_table_name(self.database, table_name), action='add'))
+            full_table_name = reform_full_table_name(self.database, table_name)
+            self._tables(generate_table_id(full_table_name), full_table_name, action='add')
 
     @property
     def tables(self):
