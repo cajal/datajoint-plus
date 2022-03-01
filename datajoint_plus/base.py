@@ -103,6 +103,10 @@ class Base:
         cls._add_hash_info_to_header(**hash_info_dict)
 
     @classproperty
+    def table_id(cls):
+        return generate_hash([{'full_table_name': cls.full_table_name}])
+
+    @classproperty
     def hash_len(cls):
         if cls.hash_name is not None and cls._hash_len is None:
             cls._hash_name_validation()
@@ -324,7 +328,6 @@ class Base:
         
         Warning: rows must be able to be safely converted into a pandas dataframe.
         :param rows (pd.DataFrame, QueryExpression, list, tuple): rows to pass to DataJoint `insert`.
-        :param hash_table_name (bool): Whether to include table_name in rows for hashing
         :overwrite_rows (bool): Whether to overwrite key/ values in rows. If False, conflicting keys will raise a ValidationError. 
         :returns: modified rows
         """
@@ -333,9 +336,9 @@ class Base:
         hash_table_name = True if cls.hash_table_name or (issubclass(cls, dj.Part) and hasattr(cls.master, 'hash_part_table_names') and getattr(cls.master, 'hash_part_table_names')) else False
 
         if hash_table_name:
-            table_name = {'#__table_name__': cls.table_name}
+            table_id = {'table_id': cls.table_id}
         else:
-            table_name = None
+            table_id = None
             
         rows = format_rows_to_df(rows)
 
@@ -346,10 +349,10 @@ class Base:
             rows_to_hash = rows[[*cls.hashed_attrs]]
 
             if cls.hash_group:
-                rows[cls.hash_name] = generate_hash(rows_to_hash, add_constant_columns=table_name)[:cls.hash_len]
+                rows[cls.hash_name] = generate_hash(rows_to_hash, add_constant_columns=table_id)[:cls.hash_len]
 
             else:
-                rows[cls.hash_name] = [generate_hash([row], add_constant_columns=table_name)[:cls.hash_len] for row in rows_to_hash.to_dict(orient='records')]
+                rows[cls.hash_name] = [generate_hash([row], add_constant_columns=table_id)[:cls.hash_len] for row in rows_to_hash.to_dict(orient='records')]
                 
         return rows
 
