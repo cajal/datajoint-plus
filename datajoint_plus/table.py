@@ -61,30 +61,39 @@ class Tables(Table):
             delete - deletes table from log
         """
         try:
-            table_id_restr = {'table_id': table_id} if table_id is not None else {}
-            full_table_name_restr = {'full_table_name': full_table_name} if full_table_name is not None else {}
+            if action == 'add':
+                assert full_table_name is not None, 'full_table_name needed to add table'
+                
+                if table_id is None:
+                    table_id = generate_table_id(full_table_name)
 
-            if action is not None:
-                if action == 'add':
-                    assert full_table_name is not None, 'full_table_name needed to add table'
-                    
-                    if table_id is None:
-                        table_id = generate_table_id(full_table_name)
-
-                    self.insert1(
-                        dict(
-                            table_id=table_id, 
-                            full_table_name=full_table_name, 
-                            djp_version=version),
-                            skip_duplicates=True, 
-                            ignore_extra_fields=True
-                        )   
-                if action == 'delete':
-                    assert (table_id is None) ^ (full_table_name is None), 'Provide either table_id or full_table_name.'
-                    
-                    (self & table_id_restr & full_table_name_restr).delete()
+                self.insert1(
+                    dict(
+                        table_id=table_id, 
+                        full_table_name=full_table_name, 
+                        djp_version=version),
+                        skip_duplicates=True, 
+                        ignore_extra_fields=True
+                    )   
+      
             else:
-                full_table_name = (self & table_id_restr & full_table_name_restr).fetch1('full_table_name')
+                table_id_restr = f'table_id LIKE "{table_id}%"' if table_id is not None else None
+                full_table_name_restr = {'full_table_name': full_table_name} if full_table_name is not None else None
+                
+                restr = [r for r in [table_id_restr, full_table_name_restr] if r is not None]
+                
+                for r in restr:
+                    self &= r 
+
+                if action == 'delete':
+                    assert ~((table_id is None) and (full_table_name is None)), 'Provide table_id or full_table_name to delete.'
+                    assert len(self) == 1, 'There should be only one entry to delete.'
+                    self.delete()
+
+                if (table_id is None) and (full_table_name is None):
+                    return self
+
+                full_table_name = self.fetch1('full_table_name')
                 return free_table(self.connection, full_table_name)
 
         except Exception as e:
