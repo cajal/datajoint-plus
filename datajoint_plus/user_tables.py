@@ -1,12 +1,17 @@
 """
 Hosts the original DataJoint table tiers extended with DataJointPlus.
 """
+import re
+
 import datajoint as dj
 from datajoint.user_tables import UserTable
 
 from .base import MasterBase, PartBase
 from .table import Tables
+from .utils import classproperty
 
+master_classes = (dj.Manual, dj.Lookup, dj.Computed, dj.Imported,)
+part_classes = (dj.Part,)
 
 class UserTable(UserTable):
     """
@@ -33,6 +38,23 @@ class UserTable(UserTable):
             self._tables_ = Tables(self.connection, database=self.database)
         return self._tables_
 
+    @classproperty
+    def is_master(cls):
+        try:
+            next(tier for tier in master_classes
+                    if re.fullmatch(tier.tier_regexp, cls.table_name))
+            return True
+        except StopIteration:
+            return False
+
+    @classproperty
+    def is_part(cls):
+        try:
+            next(tier for tier in master_classes
+                        if re.fullmatch(tier.tier_regexp, cls.table_name))
+            return True
+        except StopIteration:
+            return False
     
 
 class Lookup(MasterBase, UserTable, dj.Lookup):
