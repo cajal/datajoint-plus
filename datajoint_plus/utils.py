@@ -191,6 +191,6 @@ def goto(table_id, directory='current_module'):
         for _, obj in directory:
             return check_obj(obj)
     else:
-        for obj in directory:
+        for obj in dir(directory):
             return check_obj(obj)
 
