@@ -3,15 +3,18 @@
 import inspect
 import logging
 import re
-import requests
+import sys
 
 import pandas as pd
+import requests
 from datajoint import config
 from datajoint.errors import _switch_adapted_types, _switch_filepath_types
 from datajoint.table import QueryExpression
+from datajoint.user_tables import UserTable
 
 from .errors import ValidationError
 from .version import __version__
+
 
 class classproperty:
     def __init__(self, f):
@@ -160,3 +163,23 @@ def check_if_latest_version(source='github', return_latest=False):
             return latest_version
     except:
         logging.warning(f'DataJointPlus version check failed.')
+
+
+def goto(table_id):
+    """
+    Checks table_id's of DataJoint user classes in the current module and returns the class if a partial match to table_id is found. 
+    
+    :param: (str) table_id to check (found in user_class.table_id and in schema.tables)
+    
+    returns: class if a table_id match is found, otherwise None
+    """
+    for _, obj in inspect.getmembers(sys.modules[__name__]):
+        if inspect.isclass(obj) and issubclass(obj, UserTable):
+            if getattr(obj, 'table_id') in table_id:
+                return obj
+            else:
+                # check parts
+                for p in dir(obj):
+                    if inspect.isclass(p) and issubclass(p, UserTable):
+                        if getattr(p, 'table_id') in table_id:
+                            return p
