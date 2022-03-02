@@ -50,7 +50,7 @@ class UserTable(UserTable):
     @classproperty
     def is_part(cls):
         try:
-            next(tier for tier in master_classes
+            next(tier for tier in part_classes
                         if re.fullmatch(tier.tier_regexp, cls.table_name))
             return True
         except StopIteration:
