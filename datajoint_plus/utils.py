@@ -165,15 +165,17 @@ def check_if_latest_version(source='github', return_latest=False):
         logging.warning(f'DataJointPlus version check failed.')
 
 
-def goto(table_id):
+def goto(table_id, directory='current_module'):
     """
     Checks table_id's of DataJoint user classes in the current module and returns the class if a partial match to table_id is found. 
     
     :param: (str) table_id to check (found in user_class.table_id and in schema.tables)
-    
+    :param: Options - 
+        "current_module" (str) - searches current module
+        directory - directory to search
     returns: class if a table_id match is found, otherwise None
     """
-    for _, obj in inspect.getmembers(sys.modules[__name__]):
+    def check_obj(obj):
         if inspect.isclass(obj) and issubclass(obj, UserTable):
             if getattr(obj, 'table_id') in table_id:
                 return obj
@@ -183,3 +185,12 @@ def goto(table_id):
                     if inspect.isclass(p) and issubclass(p, UserTable):
                         if getattr(p, 'table_id') in table_id:
                             return p
+
+    if directory == 'current_module':
+        directory = inspect.getmembers(sys.modules[__name__])
+        for _, obj in directory:
+            return check_obj(obj)
+    else:
+        for obj in directory:
+            return check_obj(obj)
+
