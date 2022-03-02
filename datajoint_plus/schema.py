@@ -9,8 +9,8 @@ import datajoint as dj
 from .compatibility import add_datajoint_plus
 from .utils import enable_datajoint_flags, register_externals, split_full_table_name, reform_full_table_name
 from .table import Tables
-from .hash import generate_table_id
-
+# from .hash import generate_table_id
+from .utils import classproperty
 
 class Schema(dj.Schema):
     """
@@ -28,6 +28,10 @@ class Schema(dj.Schema):
         #     _, name = split_full_table_name(key['full_table_name'])
         #     if name not in self.list_tables():
         #         self.tables(full_table_name=key['full_table_name'], action='delete')
+
+    @classproperty
+    def is_schema(cls):
+        True
 
     @property
     def tables(self):
