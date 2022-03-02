@@ -21,13 +21,13 @@ class Schema(dj.Schema):
 
         # update ~tables
         self._tables = None
-        for table_name in self.list_tables():
-            full_table_name = reform_full_table_name(self.database, table_name)
-            self.tables(generate_table_id(full_table_name), full_table_name, action='add')
-        for key in self._tables:
-            _, name = split_full_table_name(key['full_table_name'])
-            if name not in self.list_tables():
-                self.tables(full_table_name=key['full_table_name'], action='delete')
+        # for table_name in self.list_tables():
+        #     full_table_name = reform_full_table_name(self.database, table_name)
+        #     self.tables(generate_table_id(full_table_name), full_table_name, action='add')
+        # for key in self._tables:
+        #     _, name = split_full_table_name(key['full_table_name'])
+        #     if name not in self.list_tables():
+        #         self.tables(full_table_name=key['full_table_name'], action='delete')
 
     @property
     def tables(self):
