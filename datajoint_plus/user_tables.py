@@ -39,6 +39,10 @@ class UserTable(UserTable):
         return self._tables_
 
     @classproperty
+    def is_user_table(cls):
+        return True
+
+    @classproperty
     def is_master(cls):
         try:
             next(tier for tier in master_classes
