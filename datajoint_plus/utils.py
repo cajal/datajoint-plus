@@ -183,7 +183,6 @@ def goto(table_id, directory='current_module'):
                 continue
             if inspect.isclass(obj) and issubclass(obj, UserTable):
                 try:
-                    # print('checked', name, obj.table_id)
                     if table_id in obj.table_id:
                         match.append(obj)
                         return
