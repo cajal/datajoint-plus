@@ -181,7 +181,7 @@ def goto(table_id, directory='current_module'):
         for name, obj in inspect.getmembers(d):
             if name in ['key_source', '_master', 'master']:
                 continue
-            if inspect.isclass(obj) and issubclass(obj, djp.user_tables.UserTable):
+            if inspect.isclass(obj) and issubclass(obj, UserTable):
                 try:
                     # print('checked', name, obj.table_id)
                     if table_id in obj.table_id:
