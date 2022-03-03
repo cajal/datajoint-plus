@@ -35,9 +35,9 @@ class UserTable(UserTable):
     def goto(self, table_id=None, attr=None, directory='current_module'):
         if table_id is None:
             assert attr is not None, 'If table_id is not provided, provide attr in self that hosts table_id'
-            goto(self.fetch1(attr), directory=directory)
+            return goto(self.fetch1(attr), directory=directory)
         else:
-            goto(table_id, directory=directory)
+            return goto(table_id, directory=directory)
 
 
     @property
