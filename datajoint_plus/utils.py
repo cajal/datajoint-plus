@@ -5,6 +5,7 @@ import logging
 import re
 import sys
 
+import numpy as np
 import pandas as pd
 import requests
 from datajoint import config
@@ -175,22 +176,32 @@ def goto(table_id, directory='current_module'):
         directory - directory to search
     returns: class if a table_id match is found, otherwise None
     """
-    def check_obj(obj):
-        if inspect.isclass(obj) and issubclass(obj, UserTable):
-            if getattr(obj, 'table_id') in table_id:
-                return obj
-            else:
-                # check parts
-                for p in dir(obj):
-                    if inspect.isclass(p) and issubclass(p, UserTable):
-                        if getattr(p, 'table_id') in table_id:
-                            return p
-
+    match = []
+    def check_directory(d):
+        for name, obj in inspect.getmembers(d):
+            if name in ['key_source', '_master', 'master']:
+                continue
+            if inspect.isclass(obj) and issubclass(obj, djp.user_tables.UserTable):
+                try:
+                    # print('checked', name, obj.table_id)
+                    if table_id in obj.table_id:
+                        match.append(obj)
+                        return
+                        
+                    check_directory(obj)
+                except:
+                    # logging.warning(f'Could not check table_id for {name}')
+                    continue
+                
+    
     if directory == 'current_module':
-        directory = inspect.getmembers(sys.modules[__name__])
-        for _, obj in directory:
-            return check_obj(obj)
-    else:
-        for obj in dir(directory):
-            return check_obj(obj)
+        directory = sys.modules[__name__]
+    
+    check_directory(directory)
+    
+    n_unique_matches = len(np.unique([m.table_id for m in match]))
+    if n_unique_matches == 1:
+        return match[0]
+    elif n_unique_matches > 1:
+        logging.warning(f'table_id matched to multiple tables.')
 
