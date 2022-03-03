@@ -8,7 +8,7 @@ from datajoint.user_tables import UserTable
 
 from .base import MasterBase, PartBase
 from .table import Tables
-from .utils import classproperty
+from .utils import classproperty, goto
 
 master_classes = (dj.Manual, dj.Lookup, dj.Computed, dj.Imported,)
 part_classes = (dj.Part,)
@@ -31,6 +31,14 @@ class UserTable(UserTable):
     def drop_quick(self):
         super().drop_quick()
         self._tables(self.table_id, action='delete')
+
+    def goto(self, table_id=None, attr=None, directory='current_module'):
+        if table_id is None:
+            assert attr is not None, 'If table_id is not provided, provide attr in self that hosts table_id'
+            goto(self.fetch1(attr), directory=directory)
+        else:
+            goto(table_id, directory=directory)
+
 
     @property
     def _tables(self):
