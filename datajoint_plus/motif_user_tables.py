@@ -164,7 +164,7 @@ class NestedStore(Nested, BasePart, dj.Part):
 
     @classmethod
     def put(cls, result):
-        cls.insert1(result, constant_attrs={'lookup_table': cls.table_id}, ignore_extra_fields=True, insert_to_master=True)
+        cls.insert1(result, ignore_extra_fields=True, insert_to_master=True)
 
 
 class NestedDestination(Nested, BasePart, dj.Part):
@@ -193,7 +193,7 @@ class NestedDestination(Nested, BasePart, dj.Part):
     
     @classmethod
     def add_destination(cls, table_ids):
-        cls.insert([{'table_id': t} for t in wrap(table_ids)], constant_attrs={'lookup_table': cls.table_id}, ignore_extra_fields=True, skip_duplicates=True, insert_to_master=True)
+        cls.insert([{'table_id': t} for t in wrap(table_ids)], ignore_extra_fields=True, skip_duplicates=True, insert_to_master=True)
 
     def update(self):
         if self.destinations is not None:
@@ -314,7 +314,7 @@ class NestedMaker(Nested, BasePart, dj.Part, dj.Computed):
                     inputs.update(**u.get(key))
                 except:
                     inputs.update(**(u & key).fetch1())
-                    
+
         if getattr(self.method, 'is_method_group', False):
             result = self.method.r1p(key).run(inputs)
         elif getattr(self.method, 'is_nested_method', False):
