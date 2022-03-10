@@ -8,7 +8,7 @@ import inspect
 import datajoint as dj
 import numpy as np
 
-from datajoint_plus.utils import classproperty, wrap
+from datajoint_plus.utils import classproperty, format_table_name, wrap, split_full_table_name
 
 from .base import BaseMaster, BasePart
 from .motif_base import MotifMaster, Nested
@@ -247,19 +247,32 @@ class NestedMaker(Nested, BasePart, dj.Part, dj.Computed):
         for name in ['upstream', 'method', 'destination']:
             setattr(cls, name, classproperty(getattr(cls, name)))
 
-        cls.hashed_attrs = cls.key_source.heading.primary_key
+        if getattr(cls, 'hashed_attrs', None) is None:
+            cls.hashed_attrs = cls.key_source.primary_key
+        if getattr(cls, '_upstream_definition', None) is None:
+            cls._upstream_definition = ''.join([f'-> {u.class_name} \n' for u in cls._upstream]) if cls._upstream is not None else ''
+        if getattr(cls, '_method_definition', None) is None:
+            cls._method_definition = ''.join(['-> ', cls._method.class_name, '\n'])
+        if getattr(cls, '_destination_definition', None) is None:
+            cls._destination_definition = ''.join(['-> ', cls._destination.class_name, '\n'])
+        if getattr(cls, 'additional_pk_definition', None) is None:
+            cls._additional_pk_definition = ''
+        if getattr(cls, 'additional_sk_definition', None) is None:
+            cls._additional_sk_definition = ''
 
         cls.definition = ''.join([
             f"""
             # {cls().__class__.__name__}
             -> master
             """,
-            ''.join([f'-> {u.class_name} \n' for u in cls._upstream]) if cls._upstream is not None else '',
-            ''.join(['-> ', cls._method.class_name, '\n']),
+            cls._upstream_definition,
+            cls._method_definition,
+            cls._additional_pk_definition,
             """
             ---
             """,
-            ''.join(['-> ', cls._destination.class_name, '\n']),
+            cls._destination_definition,
+            cls._additional_sk_definition,
             """
             ts_inserted=CURRENT_TIMESTAMP: timestamp #
             """
@@ -269,7 +282,14 @@ class NestedMaker(Nested, BasePart, dj.Part, dj.Computed):
 
     def upstream(cls):
         if cls._upstream is not None:
-            return namedtuple('Upstream', [c.class_name for c in cls._upstream])(*cls._upstream)
+            names = []
+            for up in cls._upstream:
+                try:
+                    names.append(up.class_name)
+                except AttributeError:
+                    names.append(format_table_name(split_full_table_name(up.from_clause)[1]) + up.__class__.__name__)
+
+            return namedtuple('Upstream', *names)(*cls._upstream)
 
     def method(cls):
         return cls._method
@@ -288,12 +308,17 @@ class NestedMaker(Nested, BasePart, dj.Part, dj.Computed):
         inputs = {}
         if self.upstream is not None:
             for u in self.upstream:
-                inputs.update(u.get(key))
-
+                if inspect.isclass(u):
+                    u = u()
+                try:
+                    inputs.update(**u.get(key))
+                except:
+                    inputs.update(**(u & key).fetch1())
+                    
         if getattr(self.method, 'is_method_group', False):
-            result = self.method.r1p(key).run(**inputs)
+            result = self.method.r1p(key).run(inputs)
         elif getattr(self.method, 'is_nested_method', False):
-            result = (self.method & key).run(**inputs)
+            result = (self.method & key).run(inputs)
         else:
             raise AttributeError(f'table type {self.method.__class__.__base__.__name__} not supported.')
             
@@ -311,7 +336,6 @@ class NestedMaker(Nested, BasePart, dj.Part, dj.Computed):
             raise AttributeError(f'table type {self.destination.__class__.__base__.__name__} not a supported.')
         
         key.update(**dkey)
-        
         destination.put(result)
         self.insert1(key)
 
