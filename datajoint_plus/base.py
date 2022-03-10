@@ -45,7 +45,7 @@ class Base:
     _add_hash_params_to_header = True
     
     @classmethod
-    def init_validation(cls, **kwargs):
+    def _init_validation(cls, **kwargs):
         """
         Validation for initialization of subclasses of abstract class Base. 
         """
@@ -113,7 +113,7 @@ class Base:
         return cls._hash_len
 
     @classmethod
-    def insert_validation(cls):
+    def _insert_validation(cls):
         """
         Validation for insertion to DataJoint tables that are subclasses of abstract class Base. 
         """
@@ -214,10 +214,6 @@ class Base:
         returns (list): list with hash(es)
         """ 
         return cls.add_hash_to_rows(rows, **kwargs)[cls.hash_name].unique().tolist() if unique else cls.add_hash_to_rows(rows, **kwargs)[cls.hash_name].tolist()
-
-    @classmethod
-    def get(cls, key):
-        return (cls & key).fetch1()
 
     @classmethod
     def restrict_with_hash(cls, hash, hash_name=None):
@@ -363,7 +359,7 @@ class Base:
         """
         
         if not cls._is_insert_validated:
-            cls.insert_validation()
+            cls._insert_validation()
         
         if constant_attrs != {}:
             rows = cls.add_constant_attrs_to_rows(rows, constant_attrs, overwrite_rows)
@@ -380,27 +376,24 @@ class Base:
         return rows
 
 
-class MasterBase(Base):
+class BaseMaster(Base):
     hash_part_table_names = True
     _is_hash_name_validated = False
 
-    def __init_subclass__(cls, **kwargs):
-        cls.init_validation()
-
     @classmethod
-    def init_validation(cls):
+    def _init_validation(cls, **kwargs):
         """
-        Validation for initialization of subclasses of abstract class MasterBase. 
+        Validation for initialization of subclasses of abstract class BaseMaster. 
         """
         for attr in ['hash_table_name', 'hash_part_table_names']:
             assert isinstance(getattr(cls, attr), bool), f'"{attr}" must be a boolean.'
 
-        super().init_validation(hash_table_name=cls.hash_table_name, hash_part_table_names=cls.hash_part_table_names)
+        super()._init_validation(hash_table_name=cls.hash_table_name, hash_part_table_names=cls.hash_part_table_names)
 
     @classmethod
-    def insert_validation(cls):
+    def _insert_validation(cls):
         """
-        Validation for insertion into subclasses of abstract class MasterBase. 
+        Validation for insertion into subclasses of abstract class BaseMaster. 
         """
         if cls.hash_name is not None:
             if cls.hash_name not in cls.heading.names:
@@ -410,7 +403,7 @@ class MasterBase(Base):
             if not cls._is_hash_name_validated:
                 cls._hash_name_validation()
         
-        super().insert_validation()
+        super()._insert_validation()
     
     @classmethod
     def _hash_name_validation(cls):
@@ -718,7 +711,7 @@ class MasterBase(Base):
         cls.load_dependencies(force=reload_dependencies)
 
         if not cls._is_insert_validated:
-            cls.insert_validation()
+            cls._insert_validation()
         
         if insert_to_parts is not None:
             assert cls.has_parts(), 'No part tables found. If you are expecting part tables, try with reload_dependencies=True.'
@@ -737,19 +730,15 @@ class MasterBase(Base):
                 print('Error inserting into part table. ')
 
         
-class PartBase(Base):
+class BasePart(Base):
     _is_hash_name_validated = False
 
-    def __init_subclass__(cls, **kwargs):
-        cls.init_validation()
-
     @classmethod
-    def init_validation(cls):
+    def _init_validation(cls, **kwargs):
         """
-        Validation for initialization of subclasses of abstract class PartBase. 
+        Validation for initialization of subclasses of abstract class BasePart. 
         """
-
-        super().init_validation(hash_table_name=cls.hash_table_name)
+        super()._init_validation(hash_table_name=cls.hash_table_name)
     
     @classmethod
     def _hash_name_validation(cls, source='self'):
@@ -783,9 +772,9 @@ class PartBase(Base):
         return '.'.join([to_camel_case(groups['master']), to_camel_case(groups['part'])])
 
     @classmethod
-    def insert_validation(cls):
+    def _insert_validation(cls):
         """
-        Validation for insertion into subclasses of abstract class PartBase. 
+        Validation for insertion into subclasses of abstract class BasePart. 
         """
                     
         if cls.hash_name is not None:
@@ -796,7 +785,7 @@ class PartBase(Base):
             if not cls._is_hash_name_validated:
                 cls._hash_name_validation()
 
-        super().insert_validation()
+        super()._insert_validation()
 
     @classmethod
     def insert(cls, rows, replace=False, skip_duplicates=False, ignore_extra_fields=False, allow_direct_insert=None, reload_dependencies=False, insert_to_master=False, insert_to_master_kws={}, skip_hashing=False, constant_attrs={}, overwrite_rows=False):
