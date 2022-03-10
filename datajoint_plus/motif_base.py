@@ -16,19 +16,10 @@ class Motif(UserTable):
 class MotifMaster(Motif):
     @classproperty
     def definition(cls):
-        return ''.join([f"""
+        return f"""
         #{cls().class_name}
-        """,
-        f"""
         {cls.hash_name} : varchar({cls.hash_len}) # hash
         """
-        ,
-        """
-        ---
-        lookup_table=NULL : varchar(32) # (optional) table_id with information about hash
-        ts_inserted=CURRENT_TIMESTAMP : timestamp
-        """
-        ])
 
 
 class Nested(Motif):
