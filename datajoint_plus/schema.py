@@ -9,8 +9,9 @@ import datajoint as dj
 from .compatibility import add_datajoint_plus
 from .utils import enable_datajoint_flags, register_externals, split_full_table_name, reform_full_table_name
 from .table import Tables
-# from .hash import generate_table_id
+from .hash import generate_table_id
 from .utils import classproperty
+from .table import FreeTable
 
 class Schema(dj.Schema):
     """
@@ -19,15 +20,18 @@ class Schema(dj.Schema):
     def __init__(self, schema_name, context=None, *, connection=None, create_schema=True, create_tables=True):
         super().__init__(schema_name=schema_name, context=context, connection=connection, create_schema=create_schema, create_tables=create_tables)
 
-        # update ~tables
-        self._tables = None
-        # for table_name in self.list_tables():
-        #     full_table_name = reform_full_table_name(self.database, table_name)
-        #     self.tables(generate_table_id(full_table_name), full_table_name, action='add')
-        # for key in self._tables:
-        #     _, name = split_full_table_name(key['full_table_name'])
-        #     if name not in self.list_tables():
-        #         self.tables(full_table_name=key['full_table_name'], action='delete')
+        # attempt to update ~tables
+        try:
+            self._tables = None
+            for table_name in self.list_tables():
+                full_table_name = reform_full_table_name(self.database, table_name)
+                self.tables(generate_table_id(full_table_name), full_table_name, action='add')
+            for key in self._tables:
+                _, name = split_full_table_name(key['full_table_name'])
+                if name not in self.list_tables():
+                    self.tables(full_table_name=key['full_table_name'], action='delete')
+        except:
+            pass
 
     @classproperty
     def is_schema(cls):
@@ -61,7 +65,7 @@ class Schema(dj.Schema):
             assert database == self.database, table_not_in_schema
         else:
             raise AttributeError('Provide table_name or full_table_name.')
-        return dj.FreeTable(self.connection, full_table_name)
+        return FreeTable(self.connection, full_table_name)
 
 
 class VirtualModule(types.ModuleType):
