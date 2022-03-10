@@ -13,9 +13,10 @@ from datajoint.errors import _switch_adapted_types, _switch_filepath_types
 from datajoint.table import QueryExpression
 from datajoint.user_tables import UserTable
 
+from .hash import generate_table_id
 from .errors import ValidationError
 from .version import __version__
-
+from . import conn
 
 class classproperty:
     def __init__(self, f):
@@ -23,6 +24,12 @@ class classproperty:
 
     def __get__(self, obj, owner):
         return self.f(owner)
+
+
+def wrap(item):
+    if not isinstance(item, list) and not isinstance(item, tuple):
+        item = [item]
+    return item
 
 
 def split_full_table_name(full_table_name:str):
@@ -166,20 +173,31 @@ def check_if_latest_version(source='github', return_latest=False):
         logging.warning(f'DataJointPlus version check failed.')
 
 
-def goto(table_id, directory='current_module'):
+def goto(table_id=None, full_table_name=None, directory='__main__', warn=True):
     """
-    Checks table_id's of DataJoint user classes in the current module and returns the class if a partial match to table_id is found. 
+    Checks table_id's of DataJoint user classes in the current module and returns the class if a partial match to table_id or full_table_name is found. 
     
-    :param: (str) table_id to check (found in user_class.table_id and in schema.tables)
-    :param: Options - 
-        "current_module" (str) - searches current module
+    :param table_id: (str) table_id to check (found in user_class.table_id and schema.tables)
+    :param full_table_name: (str) full_table_name to check (found in user_class.full_table_name and schema.tables)
+    :param directory: Options - 
+        '__main__' (str) - default. searches calling module.
         directory - directory to search
+    :param warn: (bool) If True, logs warnings
     returns: class if a table_id match is found, otherwise None
     """
+    # handle table_id and full_table_name input
+    assert ~((table_id is None) and (full_table_name is None)), 'Provide table_id or full_table_name'
+
+    if full_table_name is not None:
+        table_id_eval = generate_table_id(full_table_name)
+        if table_id is not None:
+            assert table_id == table_id_eval, "Provided table_id and table_id evaluated from full_table_name do not match."
+        table_id = table_id_eval
+
     match = []
     def check_directory(d):
         for name, obj in inspect.getmembers(d):
-            if name in ['key_source', '_master', 'master']:
+            if name in ['key_source', '_master', 'master', 'UserTable']:
                 continue
             if inspect.isclass(obj) and issubclass(obj, UserTable):
                 try:
@@ -189,12 +207,13 @@ def goto(table_id, directory='current_module'):
                         
                     check_directory(obj)
                 except:
-                    # logging.warning(f'Could not check table_id for {name}')
+                    if warn:
+                        logging.warning(f'Could not check table_id for {name}')
                     continue
                 
     
-    if directory == 'current_module':
-        directory = sys.modules[__name__]
+    if directory == '__main__':
+        directory = sys.modules[directory]
     
     check_directory(directory)
     
@@ -202,5 +221,9 @@ def goto(table_id, directory='current_module'):
     if n_unique_matches == 1:
         return match[0]
     elif n_unique_matches > 1:
-        logging.warning(f'table_id matched to multiple tables.')
+        if warn:
+            logging.warning(f'table_id matched to multiple tables.')
+    elif n_unique_matches == 0:
+        if warn:
+            logging.warning(f'table_id did not match to any tables. Are you searching the correct directory?')
 
