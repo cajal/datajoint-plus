@@ -310,10 +310,13 @@ class NestedMaker(Nested, BasePart, dj.Part, dj.Computed):
             for u in self.upstream:
                 if inspect.isclass(u):
                     u = u()
-                try:
-                    inputs.update(**u.get(key))
-                except:
-                    inputs.update(**(u & key).fetch1())
+                if getattr(self, 'get_upstream_keys_only', False):
+                    inputs.update(**(u & key).fetch1('KEY'))
+                else:
+                    try:
+                        inputs.update(**u.get(key))
+                    except:
+                        inputs.update(**(u & key).fetch1())
 
         if getattr(self.method, 'is_method_group', False):
             result = self.method.r1p(key).run(inputs)
