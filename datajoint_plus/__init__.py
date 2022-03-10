@@ -14,7 +14,7 @@ __all__ = ['__version__',
            'reassign_master_attribute', 'add_datajoint_plus',
            'Manual', 'Lookup', 'Imported', 'Computed', 'Part',
            'add_objects', 'check_if_latest_version', 'enable_datajoint_flags',
-           'format_table_name', 'make_store_dict', 'register_externals', 
+           'format_table_name', 'split_full_table_name', 'make_store_dict', 'register_externals', 
            'generate_hash', 'validate_and_generate_hash', 'parse_definition', 
            'reform_definition', 'errors', 'free_table',
            'Entity', 'MethodGroup', 'DestinationGroup', 'NestedMaker', 
@@ -46,7 +46,7 @@ from .table import FreeTable as free_table
 from .user_tables import Computed, Imported, Lookup, Manual, Part
 from .utils import (add_objects, check_if_latest_version,
                     enable_datajoint_flags, format_table_name, make_store_dict,
-                    register_externals)
+                    register_externals, split_full_table_name)
 from .version import __version__
 
 # aliases
