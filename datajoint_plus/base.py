@@ -728,6 +728,7 @@ class BaseMaster(Base):
             except:
                 traceback.print_exc()
                 print('Error inserting into part table. ')
+                raise
 
         
 class BasePart(Base):
@@ -812,7 +813,7 @@ class BasePart(Base):
         except:
             traceback.print_exc()
             print('Master did not insert correctly. Part insert aborted.')
-            return
+            raise
         
         if insert_to_master:
             try:
@@ -820,5 +821,6 @@ class BasePart(Base):
             except:
                 traceback.print_exc()
                 print('Master inserted but part did not. Verify master inserted correctly.')
+                raise
         else:
             super().insert(cls(), rows=rows, replace=replace, skip_duplicates=skip_duplicates, ignore_extra_fields=ignore_extra_fields, allow_direct_insert=allow_direct_insert)
