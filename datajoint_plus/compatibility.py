@@ -11,6 +11,7 @@ from datajoint.user_tables import UserTable
 from .base import Base
 from .user_tables import Computed, Imported, Lookup, Manual, Part
 
+logger = logging.getLogger(__name__)
 
 djp_mapping = {
     'Lookup': Lookup,
@@ -40,8 +41,7 @@ def add_datajoint_plus(module):
                 obj.parse_hash_info_from_header()
                 add_datajoint_plus(obj)
         except:
-            logging.warning(f'Could not add DataJointPlus to: {name}.')
-            traceback.print_exc()
+            logger.exception(f'Could not add DataJointPlus to {name}.')
 
 
 def reassign_master_attribute(module):
