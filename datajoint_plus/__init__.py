@@ -12,13 +12,13 @@ __all__ = ['__version__',
            'list_schemas', 'config',
            'DataJointPlusModule', 'create_djp_module',
            'reassign_master_attribute', 'add_datajoint_plus',
-           'Manual', 'Lookup', 'Imported', 'Computed', 'Part',
+           'Lookup', 'Computed', 'Part',
            'add_objects', 'check_if_latest_version', 'enable_datajoint_flags',
            'format_table_name', 'split_full_table_name', 'make_store_dict', 'register_externals', 
            'generate_hash', 'validate_and_generate_hash', 'parse_definition', 
            'reform_definition', 'errors', 'free_table',
-           'Entity', 'MethodGroup', 'DestinationGroup', 'NestedMaker', 
-           'NestedStore', 'NestedMethod', 'NestedDestination']
+           'Entity', 'Method', 'Destination', 'EntityLookup', 'MethodLookup', 'StoreLookup', 'MakerLookup',
+           'NestedMaker', 'NestedStore', 'NestedMethod', 'configure_logger']
 
 # from DataJoint
 from datajoint.admin import kill, set_password
@@ -38,15 +38,15 @@ from . import errors
 from .compatibility import add_datajoint_plus, reassign_master_attribute
 from .hash import generate_hash, validate_and_generate_hash
 from .heading import parse_definition, reform_definition
-from .motif_user_tables import (DestinationGroup, Entity, MethodGroup,
-                                NestedDestination, NestedMaker, NestedMethod,
-                                NestedStore)
+from .motif import (Entity, Method, Destination, 
+                                EntityLookup, MethodLookup, StoreLookup, MakerLookup,
+                                NestedMaker, NestedMethod, NestedStore)
 from .schema import DataJointPlusModule, Schema
 from .table import FreeTable as free_table
-from .user_tables import Computed, Imported, Lookup, Manual, Part
+from .user_tables import Computed, Lookup, Part
 from .utils import (add_objects, check_if_latest_version,
                     enable_datajoint_flags, format_table_name, make_store_dict,
-                    register_externals, split_full_table_name)
+                    register_externals, split_full_table_name, configure_logger)
 from .version import __version__
 
 # aliases
@@ -54,6 +54,9 @@ ERD = Di = Diagram
 create_dj_virtual_module = DataJointVirtualModule
 schema = Schema 
 create_djp_module = DataJointPlusModule 
+
+# logger format
+configure_logger()
 
 # version control
 check_if_latest_version()
