@@ -2,12 +2,18 @@
 Extensions of DataJoint Table
 """
 
+import inspect
 import logging
 
 import datajoint as dj
+
 from datajoint_plus.hash import generate_table_id
-from .utils import goto, wrap
+
+from .utils import goto, user_choice_with_default_response, wrap
 from .version import __version__ as version
+
+logger = logging.getLogger(__name__)
+
 
 class Table(dj.table.Table):
     """
@@ -70,39 +76,6 @@ class Table(dj.table.Table):
         else:
             return goto(table_id=table_id, full_table_name=full_table_name, directory=directory)
 
-    def get(self, key=None, attrs=None):
-        """
-        Returns a single entry from table as a dictionary. 
-
-        Table must be restricted to a single entry before calling get(), or key to restrict table can be passed to get(). 
-        Optionally, attrs can be passed to return a subset of table attributes. 
-
-        :param key: (dict, QueryExpression, AndList, etc) a restriction for table
-        :param attrs: (str or list/ tuple) A single attr can be provided as a str, or a list/ tuple of strings
-
-        :returns: (dict) Dictionary containing fetch1 results
-        """
-        try:
-            if attrs is not None:
-                attrs = wrap(attrs)
-
-            if key is None:
-                if attrs is not None:
-                    result = self.fetch1(*attrs)
-                    result = wrap(result)
-                    return {a: r for a, r in zip(attrs, result)} # always return as dict
-                else:
-                    return self.fetch1()
-            else:
-                if attrs is not None:
-                    result = (self & key).fetch1(*attrs)
-                    result = wrap(result)
-                    return {a: r for a, r in zip(attrs, result)}
-                else:
-                    return (self & key).fetch1()
-        except AttributeError as e:
-            raise AttributeError(e.args[0] + f'. Did you instantiate the class?') from None
-
     @property
     def _tables(self):
         if self._tables_ is None:
@@ -123,6 +96,8 @@ class FreeTable(Table, dj.FreeTable):
         dj.table.Table.drop_quick(self)
         self._tables(full_table_name = self.full_table_name, action='delete')
 
+
+#### CAN TABLES BE PUT IN USERTABLES????????
 
 class Tables(Table):
     """
@@ -218,8 +193,8 @@ class Tables(Table):
                 return table
 
         except Exception as e:
-            logging.error(e)
-            logging.info('failure interacting with ~tables')
+            logger.error(e)
+            logger.info('failure interacting with ~tables')
 
     @property
     def exists(self):
