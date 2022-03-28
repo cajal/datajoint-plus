@@ -13,6 +13,8 @@ from .hash import generate_table_id
 from .utils import classproperty
 from .table import FreeTable
 
+logger = logging.getLogger(__name__)
+
 class Schema(dj.Schema):
     """
     Extension of dj.Schema that adds a table log with hashes. 
@@ -132,7 +134,7 @@ class DataJointPlusModule(VirtualModule):
             super(dj.VirtualModule, self).__init__(name=module.__name__)
             if module_name:
                 if warn:
-                    logging.warning('module_name ignored when instantiated with module.')
+                    logger.warning('module_name ignored when instantiated with module.')
                 
             if schema_obj_name:
                 assert schema_obj_name in module.__dict__, f'schema_obj_name: {schema_obj_name} not found in module.'
