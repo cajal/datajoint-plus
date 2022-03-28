@@ -4,6 +4,7 @@ import inspect
 import logging
 import re
 import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -12,11 +13,14 @@ from datajoint import config
 from datajoint.errors import _switch_adapted_types, _switch_filepath_types
 from datajoint.table import QueryExpression
 from datajoint.user_tables import UserTable
+from unittest import mock
 
+from .errors import OverwriteError, ValidationError
 from .hash import generate_table_id
-from .errors import ValidationError
 from .version import __version__
-from . import conn
+
+logger = logging.getLogger(__name__)
+
 
 class classproperty:
     def __init__(self, f):
@@ -29,6 +33,12 @@ class classproperty:
 def wrap(item):
     if not isinstance(item, list) and not isinstance(item, tuple):
         item = [item]
+    return item
+
+def unwrap(item):
+    if isinstance(item, list) or isinstance(item, tuple):
+        if len(item) == 1:
+            return item[0]
     return item
 
 
@@ -163,14 +173,14 @@ def check_if_latest_version(source='github', return_latest=False):
             _latest_version_text = re.search('__version__.*', requests.get(f"https://raw.githubusercontent.com/cajal/datajoint-plus/main/datajoint_plus/version.py").text).group()
             latest_version = _latest_version_text.split('=')[1].strip(' "'" '") if len(_latest_version_text.split('='))>1 else _latest_version_text.strip(' "'" '")
             if __version__ != latest_version:
-                logging.warning(f'Imported datajoint_plus version, {__version__} does not match the latest version on Github, {latest_version}.')
+                logger.warning(f'Imported datajoint_plus version, {__version__} does not match the latest version on Github, {latest_version}.')
         else:
             raise AttributeError('Source not recognized. "github" is the only supported source')
 
         if return_latest:
             return latest_version
     except:
-        logging.warning(f'DataJointPlus version check failed.')
+        logger.warning(f'DataJointPlus version check failed.')
 
 
 def goto(table_id=None, full_table_name=None, directory='__main__', warn=True):
@@ -208,7 +218,7 @@ def goto(table_id=None, full_table_name=None, directory='__main__', warn=True):
                     check_directory(obj)
                 except:
                     if warn:
-                        logging.warning(f'Could not check table_id for {name}')
+                        logger.warning(f'Could not check table_id for {name}')
                     continue
                 
     
@@ -222,8 +232,92 @@ def goto(table_id=None, full_table_name=None, directory='__main__', warn=True):
         return match[0]
     elif n_unique_matches > 1:
         if warn:
-            logging.warning(f'table_id matched to multiple tables.')
+            logger.warning(f'table_id matched to multiple tables.')
     elif n_unique_matches == 0:
         if warn:
-            logging.warning(f'table_id did not match to any tables. Are you searching the correct directory?')
+            logger.warning(f'table_id did not match to any tables. Are you searching the correct directory?')
 
+
+def configure_logger(filename=None, level=config['loglevel'], format='%(asctime)s - %(name)s:%(levelname)s:%(message)s', datefmt="%m-%d-%Y %I:%M:%S %p %Z", force=True):
+    if filename is not None:
+        filename = Path(filename)
+
+    log_levels = {
+        'INFO': logging.INFO,
+        'WARNING': logging.WARNING,
+        'CRITICAL': logging.CRITICAL,
+        'DEBUG': logging.DEBUG,
+        'ERROR': logging.ERROR,
+        None:  logging.NOTSET
+    }
+
+    return logging.basicConfig(filename=filename, level=log_levels[level], format=format, datefmt=datefmt, force=force)
+
+
+def user_choice_with_default_response(default_response=None):
+    """Creates a replacement for the DataJoint `user_choice` function that will
+    return a default response if one was provided."""
+
+    def _user_choice(prompt, choices=("yes", "no"), default=None):
+        """
+        Prompts the user for confirmation.  The default value, if any, is capitalized.
+        :param prompt: Information to display to the user.
+        :param choices: an iterable of possible choices.
+        :param default: default choice
+        :param default_response: If default_response is provided, bypasses input and returns default_response
+        :return: the user's choice
+        """
+        if default_response is not None:
+            return default_response
+        
+        assert default is None or default in choices
+        choice_list = ', '.join((choice.title() if choice == default else choice for choice in choices))
+        response = None
+        while response not in choices:
+            response = input(prompt + ' [' + choice_list + ']: ')
+            response = response.lower() if response else default
+        return response
+
+    return _user_choice
+
+
+def default_user_choice(default:str):
+    return mock.patch("datajoint.table.user_choice", new=user_choice_with_default_response(default))
+
+
+class safedict(dict):
+    err_msg = 'Cannot update dict because overwrite = False'
+
+    def __init__(self, warn=True, overwrite=False, logger=None, *args, **kwargs):
+        """
+        Extension of dict that can prevent update if key already present in dict.
+
+        :param warn:  (bool) toggle warnings
+        :param overwrite: (bool) 
+            if False, dict update will be prevent if key found in dict. 
+            if True, defaults to normal dict behavior
+        :param logger: logger to use for warnings. defaults to generic logging. 
+        """
+        self.warn = warn
+        self.overwrite = overwrite
+        self.logger = logger if logger is not None else logging.getLogger('__main__')
+        super().__init__(*args, **kwargs)
+        
+    def _key_in_dict(self, *args, **kwargs):
+        in_dict = False
+        for key in (kwargs or args[0]):
+            if key in self:
+                in_dict = True
+                if self.warn:
+                    self.logger.warning(f'{key} already in dict.')
+        return in_dict
+                    
+    def update(self, *args, **kwargs):
+        if self._key_in_dict(*args, **kwargs) and not self.overwrite:
+            raise OverwriteError(self.err_msg)
+        super().update(*args, **kwargs)
+    
+    def __setitem__(self, key, value):
+        if self._key_in_dict(key) and not self.overwrite:
+            raise OverwriteError(self.err_msg)
+        super().__setitem__(key, value)
