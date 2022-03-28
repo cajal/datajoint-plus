@@ -1,15 +1,19 @@
 """
 Hosts the original DataJoint table tiers extended with DataJointPlus.
 """
+import logging
 import re
 
 import datajoint as dj
+
+from datajoint_plus.utils import classproperty
 from .table import Table
 from .base import BaseMaster, BasePart
 
 master_classes = (dj.Manual, dj.Lookup, dj.Computed, dj.Imported,)
 part_classes = (dj.Part,)
 
+logger = logging.getLogger(__name__)
 
 class UserTable(Table, dj.user_tables.UserTable):
     @property
@@ -38,7 +42,7 @@ class UserTable(Table, dj.user_tables.UserTable):
 class Lookup(BaseMaster, UserTable, dj.Lookup):
     def __init_subclass__(cls, **kwargs):
         cls._init_validation(**kwargs)
-
+    
 
 class Manual(BaseMaster, UserTable, dj.Manual):
     def __init_subclass__(cls, **kwargs):
