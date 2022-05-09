@@ -1,11 +1,11 @@
 import re
 import inspect
-import logging
+from .logging import getLogger
 import datajoint as dj
 
 from datajoint_plus.utils import unwrap
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class StrToTable:
     """
