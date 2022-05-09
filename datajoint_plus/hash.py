@@ -60,3 +60,13 @@ def validate_and_generate_hash(rows, **kwargs):
     """
     _validate_rows_for_hashing(rows)
     return generate_hash(rows, **kwargs)
+
+
+def generate_table_id(full_table_name):
+    """
+    Generates table_id by hashing full_table_name.
+
+    :param: full_table_name 
+    :returns: table_id
+    """
+    return generate_hash([{'full_table_name': full_table_name}])
