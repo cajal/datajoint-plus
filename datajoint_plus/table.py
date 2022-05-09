@@ -2,17 +2,16 @@
 Extensions of DataJoint Table
 """
 
-import inspect
-import logging
+from .logging import getLogger
 
 import datajoint as dj
 
 from datajoint_plus.hash import generate_table_id
 
-from .utils import goto, user_choice_with_default_response, wrap
+from .utils import classproperty, goto
 from .version import __version__ as version
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class Table(dj.table.Table):
@@ -20,19 +19,20 @@ class Table(dj.table.Table):
     Extensions to DataJoint Table
     """
     
-    _tables_ = None
+    _table_log_ = None
 
     def declare(self, context=None):
         super().declare(context=context)
-        self._tables(self.table_id, self.full_table_name, action='add')
+        if not isinstance(self, TableLog):
+            self._table_log(self.table_id, self.full_table_name, action='add')
     
     def drop(self):
         dj.table.Table.drop(self)
-        self._tables(self.table_id, action='delete')
+        self._table_log(self.table_id, action='delete')
 
     def drop_quick(self):
         dj.table.Table.drop_quick(self)
-        self._tables(self.table_id, action='delete')
+        self._table_log(self.table_id, action='delete')
 
     def goto(self, table_id=None, full_table_name=None, tid_attr=None, ftn_attr=None, directory='__main__', return_free_table=False, ftn_lookup=None):
         """
@@ -77,10 +77,14 @@ class Table(dj.table.Table):
             return goto(table_id=table_id, full_table_name=full_table_name, directory=directory)
 
     @property
-    def _tables(self):
-        if self._tables_ is None:
-            self._tables_ = Tables(self.connection, database=self.database)
-        return self._tables_
+    def _table_log(self):
+        if self._table_log_ is None:
+            self._table_log_ = TableLog(self.connection, database=self.database)
+        return self._table_log_
+
+    @classproperty
+    def table_id(cls):
+        return generate_table_id(cls.full_table_name)
 
 
 class FreeTable(Table, dj.FreeTable):
@@ -90,16 +94,14 @@ class FreeTable(Table, dj.FreeTable):
     
     def drop(self):
         dj.table.Table.drop(self)
-        self._tables(full_table_name = self.full_table_name, action='delete')
+        self._table_log(full_table_name = self.full_table_name, action='delete')
 
     def drop_quick(self):
         dj.table.Table.drop_quick(self)
-        self._tables(full_table_name = self.full_table_name, action='delete')
+        self._table_log(full_table_name = self.full_table_name, action='delete')
 
 
-#### CAN TABLES BE PUT IN USERTABLES????????
-
-class Tables(Table):
+class TableLog(Table):
     """
     Log of tables in each schema.
     Instances are callable.  Calls with table hash return the table entry. 
@@ -109,7 +111,7 @@ class Tables(Table):
     def __init__(self, arg, database=None):
         super().__init__()
 
-        if isinstance(arg, Tables):
+        if isinstance(arg, TableLog):
             # copy constructor
             self.database = arg.database
             self._connection = arg._connection
@@ -140,7 +142,11 @@ class Tables(Table):
     @property
     def table_name(self):
         return '~tables'
-
+    
+    @property
+    def table_id(self):
+        return generate_table_id(self.full_table_name)
+    
     def __call__(self, table_id=None, full_table_name=None, action=None, directory='__main__'):
         """
         :param table_id: unique ID of table to insert
@@ -169,8 +175,7 @@ class Tables(Table):
                             djp_version=version
                             ),
                         )
-                if len(restr) == 1:
-                    restr._update('exists', 1)
+                restr._update('exists', 1)
       
             else:
                 table_id_restr = f'table_id LIKE "{table_id}%"' if table_id is not None else None
@@ -193,7 +198,7 @@ class Tables(Table):
                 return table
 
         except Exception as e:
-            logger.error(e)
+            logger.exception(e)
             logger.info('failure interacting with ~tables')
 
     @property
