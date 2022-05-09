@@ -4,23 +4,22 @@ import inspect
 import logging
 import re
 import sys
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import requests
-from datajoint import config
 from datajoint.errors import _switch_adapted_types, _switch_filepath_types
 from datajoint.table import QueryExpression
 from datajoint.user_tables import UserTable
 from unittest import mock
 
+from .logging import getLogger
 from .errors import OverwriteError, ValidationError
 from .hash import generate_table_id
 from .version import __version__
+from . import config
 
-logger = logging.getLogger(__name__)
-
+logger = getLogger(__name__)
 
 class classproperty:
     def __init__(self, f):
@@ -239,22 +238,6 @@ def goto(table_id=None, full_table_name=None, directory='__main__', warn=True):
             logger.warning(f'table_id did not match to any tables. Are you searching the correct directory?')
 
 
-def configure_logger(filename=None, level=config['loglevel'], format='%(asctime)s - %(name)s:%(levelname)s:%(message)s', datefmt="%m-%d-%Y %I:%M:%S %p %Z", force=True):
-    if filename is not None:
-        filename = Path(filename)
-
-    log_levels = {
-        'INFO': logging.INFO,
-        'WARNING': logging.WARNING,
-        'CRITICAL': logging.CRITICAL,
-        'DEBUG': logging.DEBUG,
-        'ERROR': logging.ERROR,
-        None:  logging.NOTSET
-    }
-
-    return logging.basicConfig(filename=filename, level=log_levels[level], format=format, datefmt=datefmt, force=force)
-
-
 def user_choice_with_default_response(default_response=None):
     """Creates a replacement for the DataJoint `user_choice` function that will
     return a default response if one was provided."""
@@ -287,7 +270,7 @@ def default_user_choice(default:str):
 
 
 class safedict(dict):
-    err_msg = 'Cannot update dict because overwrite = False'
+    err_msg = 'Cannot update safedict because overwrite = False'
 
     def __init__(self, warn=True, overwrite=False, logger=None, *args, **kwargs):
         """
@@ -306,19 +289,24 @@ class safedict(dict):
         
     def _key_in_dict(self, *args, **kwargs):
         in_dict = False
-        for key in (kwargs or args[0]):
-            if key in self:
-                in_dict = True
-                if self.warn:
-                    self.logger.warning(f'{key} already in dict.')
+        for keys in [args, kwargs]:
+            for key in keys:
+                if isinstance(key, dict):
+                    key = list(key.keys())[0]
+                if key in self:
+                    in_dict = True
+                    if self.warn:
+                        self.logger.warning(f'{key} already in safedict.')
         return in_dict
                     
     def update(self, *args, **kwargs):
         if self._key_in_dict(*args, **kwargs) and not self.overwrite:
+            self.logger.error(self.err_msg)
             raise OverwriteError(self.err_msg)
         super().update(*args, **kwargs)
     
     def __setitem__(self, key, value):
         if self._key_in_dict(key) and not self.overwrite:
+            self.logger.error(self.err_msg)
             raise OverwriteError(self.err_msg)
         super().__setitem__(key, value)
