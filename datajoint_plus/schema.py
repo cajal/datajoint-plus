@@ -2,18 +2,18 @@
 DataJointPlus Schema extensions
 """
 
-import logging
+from .logging import getLogger
 import types
 
 import datajoint as dj
 from .compatibility import add_datajoint_plus
 from .utils import enable_datajoint_flags, register_externals, split_full_table_name, reform_full_table_name
-from .table import Tables
+from .table import TableLog
 from .hash import generate_table_id
 from .utils import classproperty
 from .table import FreeTable
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class Schema(dj.Schema):
     """
@@ -42,7 +42,7 @@ class Schema(dj.Schema):
     @property
     def tables(self):
         if self._tables is None:
-            self._tables = Tables(self.connection, self.database)
+            self._tables = TableLog(self.connection, self.database)
         return self._tables
 
     def free_table(self, table_name=None, full_table_name=None):
