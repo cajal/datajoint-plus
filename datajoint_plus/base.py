@@ -4,17 +4,18 @@ Abstract classes for DataJointPlus
 
 from collections import Counter
 import inspect
-import logging
+from pathlib import Path
 import re
 import traceback
 
 import numpy as np
 import datajoint as dj
 from datajoint.table import QueryExpression, FreeTable
-from datajoint.utils import to_camel_case
+from datajoint.settings import config
 from IPython.display import display
 from ipywidgets.widgets import HBox, Label, Output
 
+from .logging import LogFileManager, getLogger
 from .enum import JoinMethod
 from .errors import OverwriteError, ValidationError
 from .hash import generate_hash, generate_table_id
@@ -24,7 +25,7 @@ from .validation import (_is_overwrite_validated,
                          _validate_hash_name_type_and_parse_hash_len,
                          pairwise_disjoint_set_validation)
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 class Base:
     _is_insert_validated = False
@@ -47,6 +48,9 @@ class Base:
     _add_hashed_attrs_to_header = True
     _add_hash_params_to_header = True
     
+    # logging
+    log_level = config['loglevel']
+
     @classmethod
     def _init_validation(cls, **kwargs):
         """
@@ -110,9 +114,7 @@ class Base:
     def class_name(cls):
         return cls.__qualname__
     
-    @classproperty
-    def table_id(cls):
-        return generate_table_id(cls.full_table_name)
+
 
     @classproperty
     def hash_len(cls):
@@ -225,7 +227,6 @@ class Base:
         rows = getattr(rows, cls.hash_name) # get hash name
         rows = rows.values if not unique else rows.unique() 
         return rows.tolist() if not as_dict else [{cls.hash_name: i} for i in rows]
-
 
     @classmethod
     def restrict_with_hash(cls, hash, hash_name=None):
@@ -349,22 +350,23 @@ class Base:
         if matches:
             for match in matches:
                 result = re.findall('\w+', match)
-                parseable = ['hash_name', 'hashed_attrs', 'hash_group', 'hash_table_name', 'hash_part_table_names']
-                for attr in parseable:
-                    if result[0] == attr:
-                        try:
-                            if attr == 'hash_name':
-                                cls.hash_name = result[1]
-                                header = header.replace(match, '') # remove match
-                            if attr == 'hashed_attrs':
-                                cls.hashed_attrs = result[1:]
-                                header = header.replace(match, '')
+                if result:
+                    parseable = ['hash_name', 'hashed_attrs', 'hash_group', 'hash_table_name', 'hash_part_table_names']
+                    for attr in parseable:
+                        if result[0] == attr:
+                            try:
+                                if attr == 'hash_name':
+                                    cls.hash_name = result[1]
+                                    header = header.replace(match, '') # remove match
+                                if attr == 'hashed_attrs':
+                                    cls.hashed_attrs = result[1:]
+                                    header = header.replace(match, '')
 
-                            if result[1] == 'True' or result[1] == 'False':
-                                setattr(cls, attr, eval(result[1]))
-                                header = header.replace(match, '')
-                        except:
-                            logger.exception(msg, attr)
+                                if result[1] == 'True' or result[1] == 'False':
+                                    setattr(cls, attr, eval(result[1]))
+                                    header = header.replace(match, '')
+                            except:
+                                logger.exception(msg, attr)
         
         cls.comment = header.strip(' ').strip('|').strip(' ')
 
@@ -447,6 +449,105 @@ class Base:
         except AttributeError as e:
             raise AttributeError(e.args[0] + f'. Did you instantiate the class?') from None
 
+    @classmethod
+    def _get_attr_name_from_type(cls, attr_type):
+        """
+        Gets the name(s) of the attribute of type attr_type.
+
+        :attr_type: type of attribute to search. Corresponds to DataJoint attribute types.
+
+        :returns: (list) list of attr_names matching attr_type
+        """
+        return [k for k, v in cls.heading.attributes.items() if v.type == attr_type]
+
+    @classmethod
+    def aggr_min(cls, attr_name:str):
+        """
+        Returns table restricted by the maximum entry of attr_name.
+
+        :param attr_name: (str) name of attribute to aggregate over
+
+        :returns: restricted dj_table
+        """
+        return cls & (dj.U(attr_name) * dj.U().aggr(cls, **{attr_name: f'min({attr_name})'}))
+
+    @classmethod
+    def aggr_max(cls, attr_name:str):
+        """
+        Returns table restricted by the minimum entry of attr_name.
+
+        :param attr_name: (str) name of attribute to aggregate over
+
+        :returns: restricted dj_table
+        """
+        return cls & (dj.U(attr_name) * dj.U().aggr(cls, **{attr_name: f'max({attr_name})'}))
+
+    @classmethod
+    def aggr_nunique(cls, attr_name:str):
+        """
+        Returns table restricted by the minimum entry of attr_name.
+
+        :param attr_name: (str) name of attribute to aggregate over
+
+        :returns: restricted dj_table
+        """
+        return dj.U().aggr(cls, **{attr_name: f'count(distinct {attr_name})'}).fetch1(attr_name)
+
+    @classmethod
+    def _timestamp_attr_validation(cls, ts_name=None):
+        """
+        Validates that ts_name is a timestamp attribute if provided, otherwise, checks that onle one timestamp attribute exists in the table.
+        """
+        if ts_name is None:
+            ts_name = cls._get_attr_name_from_type('timestamp')
+            if isinstance(ts_name, list) and len(ts_name) == 0:
+                err = 'timestamp attribute not found.'
+                logger.error(err)
+                raise AttributeError(err)
+            elif isinstance(ts_name, list) and len(ts_name) > 1:
+                err = 'Multiple timestamp attributes found. Provide desired timestamp to ts_name'
+                logger.error(err)
+                raise AttributeError(err)
+        else:
+            if cls.heading.attributes[ts_name].type != 'timestamp':
+                err = f'ts_name "{ts_name}" is not a timestamp.'
+                logger.error(err)
+                raise AttributeError(err)
+        return unwrap(ts_name)
+
+    @classmethod
+    def get_earliest_entries(cls, ts_name=None):
+        """
+        Returns table restricted to the earliest entries. Requires table to have timestamp attribute.
+
+        :param ts_name: (str) Name of timestamp attribute. 
+            If None: searches heading for timestamp attribute
+        
+        :returns: restricted dj_table
+        """
+        return cls.aggr_min(cls._timestamp_attr_validation(ts_name))
+
+    @classmethod
+    def get_latest_entries(cls, ts_name=None):
+        """
+        Returns table restricted to the latest entries. Requires table to have timestamp attribute.
+
+        :param ts_name: (str) Name of timestamp attribute. 
+            If None: searches heading for timestamp attribute
+        
+        :returns: (dj_table) Restricted table
+        """
+        return cls.aggr_max(cls._timestamp_attr_validation(ts_name))
+        
+    @classproperty
+    def Log(cls):
+        return LogFileManager(
+            name=cls.__module__ + '.' + cls.__qualname__, 
+            filename=Path(cls.database).joinpath(cls.__qualname__ + '.log'), 
+            config_file='filehandler_timed_rotating.yml',
+            level=cls.log_level
+        )
+        
 
 class BaseMaster(Base):
     hash_part_table_names = True
