@@ -3,15 +3,15 @@ Tools to enhance compatability with DataJoint.
 """
 
 import inspect
-import logging
-import traceback
 
 import datajoint as dj
 from datajoint.user_tables import UserTable
+
 from .base import Base
+from .logging import getLogger
 from .user_tables import Computed, Imported, Lookup, Manual, Part
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 djp_mapping = {
     'Lookup': Lookup,
