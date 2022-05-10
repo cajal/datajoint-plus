@@ -3,7 +3,7 @@ import logging.config
 import os
 from pathlib import Path
 from datajoint_plus.config.logging.load_config import import_config_yaml_as_dict
-from . import config
+from .config import config
 
 
 def basicConfig(filename=None, level=None, format='%(asctime)s - %(name)s:%(levelname)s:%(message)s', datefmt="%m-%d-%Y %I:%M:%S %p %Z", force=True, **kwargs):
