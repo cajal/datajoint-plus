@@ -235,10 +235,7 @@ class Base:
     @classmethod
     def _modify_header(cls, add_class_name=True, **kwargs):
         """
-        Modifies definition header to include hash_name and hashed_attrs with a parseable syntax. 
-
-        :param add_hash_name (bool): Whether to add hash_name to header
-        :param add_hashed_attrs (bool): Whether to add hashed_attrs to header
+        Modifies definition header using a parseable syntax
         """
         # set defaults
         kwargs.setdefault('hash_name', None)

@@ -16,6 +16,6 @@ setup(
     author_email='spapadop@bcm.edu',
     license="GNU LGPL",
     packages=find_packages(),
-    install_requires=['datajoint==0.12.9'],
+    install_requires=['datajoint==0.12.9', 'envyaml'],
     python_requires='~=3.6'
 )
