@@ -7,7 +7,7 @@ import types
 
 import datajoint as dj
 from .compatibility import add_datajoint_plus
-from .utils import enable_datajoint_flags, register_externals, split_full_table_name, reform_full_table_name
+from .utils import enable_datajoint_flags, load_dependencies, register_externals, split_full_table_name, reform_full_table_name
 from .table import TableLog
 from .hash import generate_table_id
 from .utils import classproperty
@@ -17,9 +17,12 @@ logger = getLogger(__name__)
 
 class Schema(dj.Schema):
     """
-    Extension of dj.Schema that adds a table log with hashes. 
+    Extension of dj.Schema that adds a table log
+
+    Additional params:
+    :param load_dependencies (bool): Loads the DataJoint graph.
     """
-    def __init__(self, schema_name, context=None, *, connection=None, create_schema=True, create_tables=True):
+    def __init__(self, schema_name, context=None, load_dependencies=True, *, connection=None, create_schema=True, create_tables=True):
         super().__init__(schema_name=schema_name, context=context, connection=connection, create_schema=create_schema, create_tables=create_tables)
 
         # attempt to update ~tables
@@ -34,6 +37,9 @@ class Schema(dj.Schema):
                     self.tables(full_table_name=key['full_table_name'], action='delete')
         except:
             pass
+
+        self.load_dependencies(force=load_dependencies, verbose=False)
+
 
     @classproperty
     def is_schema(cls):
@@ -68,6 +74,12 @@ class Schema(dj.Schema):
         else:
             raise AttributeError('Provide table_name or full_table_name.')
         return FreeTable(self.connection, full_table_name)
+    
+    def load_dependencies(self, force=True, verbose=True):
+        """
+        Loads dependencies into DataJoint networkx graph. 
+        """
+        load_dependencies(self.connection, force=force, verbose=verbose)
 
 
 class VirtualModule(types.ModuleType):
@@ -127,8 +139,7 @@ class DataJointPlusModule(VirtualModule):
             assert not module, 'Provide either schema_name or module but not both.'
             super().__init__(module_name=module_name if module_name else schema_name, schema_name=schema_name, add_objects=add_objects, create_schema=create_schema, create_tables=create_tables, connection=connection)
             
-            if load_dependencies:
-                self.__dict__['schema'].connection.dependencies.load()
+            self.load_dependencies(self.__dict__['schema'].connection, load_dependencies, verbose=False)
             
         elif module:
             super(dj.VirtualModule, self).__init__(name=module.__name__)
@@ -151,8 +162,7 @@ class DataJointPlusModule(VirtualModule):
             if spawn_missing_classes:
                 schema_obj.spawn_missing_classes(context=self.__dict__)
                 
-            if load_dependencies:
-                schema_obj.connection.dependencies.load()
+            self.load_dependencies(schema_obj.connection, load_dependencies, verbose=False)
                 
             if add_objects:
                 self.__dict__.update(add_objects)
@@ -167,3 +177,9 @@ class DataJointPlusModule(VirtualModule):
             enable_datajoint_flags()
             
         add_datajoint_plus(self)
+
+    def load_dependencies(self, connection, force=True, verbose=True):
+        """
+        Loads dependencies into DataJoint networkx graph. 
+        """
+        load_dependencies(connection=connection, force=force, verbose=verbose)
