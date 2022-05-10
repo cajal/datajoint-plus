@@ -4,6 +4,7 @@ import inspect
 import logging
 import re
 import sys
+from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -11,13 +12,14 @@ import requests
 from datajoint.errors import _switch_adapted_types, _switch_filepath_types
 from datajoint.table import QueryExpression
 from datajoint.user_tables import UserTable
-from unittest import mock
+from IPython.display import display
+from ipywidgets.widgets import HBox, Label, Output
 
-from .logging import getLogger
+from .config import config
 from .errors import OverwriteError, ValidationError
 from .hash import generate_table_id
+from .logging import getLogger
 from .version import __version__
-from . import config
 
 logger = getLogger(__name__)
 
@@ -100,9 +102,31 @@ def format_rows_to_df(rows):
     elif isinstance(rows, dict):
         rows = pd.DataFrame([rows])
     else:
-        raise ValidationError('Format of rows not recognized. Try inserting a list of dictionaries, a DataJoint expression or a pandas dataframe.')
+        raise ValidationError('Format of rows not recognized. Try a list of dictionaries, a DataJoint expression or a pandas dataframe.')
 
     return rows
+
+
+def load_dependencies(connection, force=False, verbose=True):
+    """
+    Loads dependencies in a DataJoint connection object.
+
+    :param connection: (datajoint.connection) DataJoint connection object 
+    :param force: (bool) default False. Whether to force reload.
+    """
+    if verbose:
+        if force:
+            output = Output()
+            display(output)
+            with output:
+                pending_text = Label('Loading schema dependencies...')
+                confirmation = Label('Success.')
+                confirmation.layout.display = 'none'
+                display(HBox([pending_text, confirmation]))
+                connection.dependencies.load()
+                confirmation.layout.display = None
+    else:
+        connection.dependencies.load(force=force)
 
 
 def enable_datajoint_flags(enable_python_native_blobs=True):
