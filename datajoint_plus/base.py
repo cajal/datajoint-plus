@@ -11,16 +11,14 @@ import traceback
 import numpy as np
 import datajoint as dj
 from datajoint.table import QueryExpression, FreeTable
-from datajoint.settings import config
-from IPython.display import display
-from ipywidgets.widgets import HBox, Label, Output
+from .config import config
 
 from .logging import LogFileManager, getLogger
 from .enum import JoinMethod
 from .errors import OverwriteError, ValidationError
-from .hash import generate_hash, generate_table_id
+from .hash import generate_hash
 from .heading import parse_definition, reform_definition
-from .utils import classproperty, format_rows_to_df, format_table_name, unwrap, wrap
+from .utils import classproperty, format_rows_to_df, format_table_name, unwrap, wrap, load_dependencies
 from .validation import (_is_overwrite_validated,
                          _validate_hash_name_type_and_parse_hash_len,
                          pairwise_disjoint_set_validation)
@@ -49,7 +47,7 @@ class Base:
     _add_hash_params_to_header = True
     
     # logging
-    log_level = config['loglevel']
+    loglevel = config['loglevel']
 
     @classmethod
     def _init_validation(cls, **kwargs):
@@ -113,8 +111,6 @@ class Base:
     @classproperty
     def class_name(cls):
         return cls.__qualname__
-    
-
 
     @classproperty
     def hash_len(cls):
@@ -138,26 +134,12 @@ class Base:
         cls._is_insert_validated = True
 
     @classmethod
-    def load_dependencies(cls, force=False):
+    def load_dependencies(cls, force=True, verbose=True):
         """
         Loads dependencies into DataJoint networkx graph. 
         """
-        load = False
-        if not force:
-            if not cls.connection.dependencies._loaded:
-                load = True
-        else:
-            load = True
-        if load:
-            output = Output()
-            display(output)
-            with output:
-                pending_text = Label('Loading schema dependencies...')
-                confirmation = Label('Success.')
-                confirmation.layout.display = 'none'
-                display(HBox([pending_text, confirmation]))
-                cls.connection.dependencies.load()
-                confirmation.layout.display = None
+        load_dependencies(cls.connection, force=force, verbose=verbose)
+
 
     @classmethod
     def add_constant_attrs_to_rows(cls, rows, constant_attrs:dict={}, overwrite_rows=False):
@@ -223,7 +205,7 @@ class Base:
         
         returns (list): list with hash(es)
         """ 
-        rows = cls.add_hash_to_rows(rows) # perform hashing
+        rows = cls.add_hash_to_rows(rows, overwrite_rows=True) # perform hashing
         rows = getattr(rows, cls.hash_name) # get hash name
         rows = rows.values if not unique else rows.unique() 
         return rows.tolist() if not as_dict else [{cls.hash_name: i} for i in rows]
@@ -545,7 +527,7 @@ class Base:
             name=cls.__module__ + '.' + cls.__qualname__, 
             filename=Path(cls.database).joinpath(cls.__qualname__ + '.log'), 
             config_file='filehandler_timed_rotating.yml',
-            level=cls.log_level
+            level=cls.loglevel
         )
         
 
@@ -735,14 +717,15 @@ class BaseMaster(Base):
         return np.product(renamed_parts)
     
     @classmethod
-    def restrict_parts(cls, part_restr={}, include_parts=None, exclude_parts=None, filter_out_unrestricted=False, filter_out_len_zero=False, reload_dependencies=False):
+    def restrict_parts(cls, part_restr={}, include_parts=None, exclude_parts=None, filter_out_disjoint=False, filter_out_len_zero=False, reload_dependencies=False):
         """
         Restricts part tables of cls. 
 
         :param part_restr: restriction to restrict part tables with.
         :param include_parts: (part table or list of part tables) part table(s) to restrict. If None, will restrict all part tables of cls.
         :param exclude_parts: (part table or list of part tables) part table(s) to exclude from restriction.
-        :param filter_out_unrestricted: (bool) If True, included parts must have fewer rows after the restriction is applied than they did before.
+        :param filter_out_disjoint: (bool) If True, included parts must have attributes that overlap with restriction. 
+            Requires restriction with named attributes (e.g. dict, QueryExpression, pandas dataframe)
         :param filter_out_len_zero: (bool) If True, included parts must have greater than zero rows after restriction is applied.
         :param reload_dependencies: (bool) reloads DataJoint graph dependencies.
         """
@@ -757,13 +740,8 @@ class BaseMaster(Base):
         if exclude_parts is not None:
             parts = [p for p in parts if p.full_table_name not in [e.full_table_name for e in cls._format_parts(exclude_parts)]]
         
-        if filter_out_unrestricted:
-            _parts = []
-            for p in parts:
-                q = p & part_restr
-                if len(q) < len(p()):
-                    _parts.append(q)
-            parts = _parts
+        if filter_out_disjoint:
+            parts = [p & part_restr for p in parts if not set(p.heading.names).isdisjoint(format_rows_to_df(part_restr).columns)]
         else:
             parts = [p & part_restr for p in parts]
 
@@ -773,15 +751,15 @@ class BaseMaster(Base):
         return parts
     
     @classmethod
-    def restrict_one_part(cls, part_restr={}, include_parts=None, exclude_parts=None, filter_out_unrestricted=True, filter_out_len_zero=True, reload_dependencies=False):
+    def restrict_one_part(cls, part_restr={}, include_parts=None, exclude_parts=None, filter_out_disjoint=True, filter_out_len_zero=True, reload_dependencies=False):
         """
-        Calls `restrict_parts` with filter_out_unrestricted=True and filter_out_len_zero=True by default. If not exactly one part table is returned, then a ValidationError will be raised.
+        Calls `restrict_parts` with filter_out_disjoint=True and filter_out_len_zero=True by default. If not exactly one part table is returned, then a ValidationError will be raised.
 
         :params: see `restrict_parts`.
 
         :returns: part table after restriction.
         """
-        parts = cls.restrict_parts(part_restr=part_restr, include_parts=include_parts, exclude_parts=exclude_parts, filter_out_unrestricted=filter_out_unrestricted, filter_out_len_zero=filter_out_len_zero, reload_dependencies=reload_dependencies)
+        parts = cls.restrict_parts(part_restr=part_restr, include_parts=include_parts, exclude_parts=exclude_parts, filter_out_disjoint=filter_out_disjoint, filter_out_len_zero=filter_out_len_zero, reload_dependencies=reload_dependencies)
 
         if len(parts) > 1:
             raise ValidationError('part_restr can restrict multiple part tables.')
