@@ -1,5 +1,5 @@
 # DataJointPlus
-A DataJoint extension that integrates hashes and other features. Currently only supports DataJoint version 0.12.9.
+A DataJoint extension that integrates hashes and other features. Requires DataJoint version 0.12.9.
 
 # Usage
 Minimal examples for using DataJointPlus. Documentation to be added.
@@ -7,7 +7,7 @@ Minimal examples for using DataJointPlus. Documentation to be added.
 ## Install
 
 ```bash
-pip3 install git+https://github.com/cajal/datajoint-plus.git
+pip3 install datajoint-plus
 ```
 
 ## Create new schema
@@ -78,7 +78,8 @@ Exclusion.insert(
 )
 ```
 
-## Method Tables: Hashing happens in part tables, Master aggregates method hashes
+## Method Tables: 
+### Hashing happens in part tables, Master aggregates method hashes
 
 This example uses the master table as an aggregator for hashes. 
 
