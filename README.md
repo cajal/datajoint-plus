@@ -52,7 +52,7 @@ class Exclusion(djp.Lookup):
     ]
 ```
 
-<img src="./images/lookup_hash_ex.png" alt='lookup table automatically hashes values in "reason" and places the hash under "exclusion_hash"' width="500"/>
+<img src="https://github.com/cajal/datajoint-plus/blob/main/images/lookup_hash_ex.png?raw=true" alt='lookup table automatically hashes values in "reason" and places the hash under "exclusion_hash"' width="500"/>
 
 Note: The table name is automatically added to the header next to the special character `~` that is used for parsing. In addition, the `hash_name` and `hashed_attrs` are also added to the header. This can be turned off, but is useful because it allows virtual modules to parse the header and reproduce the hashing configuration, even in the absence of the code that defined the original table. 
 
@@ -155,7 +155,7 @@ ImportMethod.FromCSV.insert1({'param1': 32, 'param2': 'some other parameter'}, i
 ImportMethod.FromAPI.insert1({'param1': 'a param', 'param2': 4.2, 'param3': 38}, insert_to_master=True)
 ImportMethod.FromAPI.insert1({'param1': 'another param', 'param2': 6.9, 'param3': 99}, insert_to_master=True)
 ```
-<img src="./images/method_table_ex_1.png" alt='method table after insertion' width="500"/>
+<img src="https://github.com/cajal/datajoint-plus/blob/main/images/method_table_ex_1.png?raw=true" alt='method table after insertion' width="500"/>
 
 
 Now, to get to a single method we can use the master table: `ImportMethod` and the `import_method_hash` as such:
@@ -172,7 +172,7 @@ ImportMethod.r1pwh('902421e75df6') # alias for restrict_one_part_with_hash
 
 Output:
 
-<img src="./images/method_table_ex_2.png" alt='method table restricted to row with hash' width="500"/>
+<img src="https://github.com/cajal/datajoint-plus/blob/main/images/method_table_ex_2.png?raw=true" alt='method table restricted to row with hash' width="500"/>
 
 
 By default, the restricted part table object is returned so we can call the run method directly:
@@ -309,7 +309,7 @@ DecimalExample.insert1({'param': 8.9})
 DecimalExample.insert1({'param': Decimal(8.9)})
 ```
 
-<img src="./images/decimal_ex.png" alt='example with Decimal datatype ' width="350"/>
+<img src="https://github.com/cajal/datajoint-plus/blob/main/images/decimal_ex.png?raw=true" alt='example with Decimal datatype ' width="350"/>
 
 Secondly, because of how SQL outputs the Decimal, neither entry can reproduce their original hash, and instead both give another hash.
 
@@ -342,7 +342,7 @@ class FloatExample(djp.Lookup):
 FloatExample.insert1({'param': 8.9})
 ```
 
-<img src="./images/float_ex.png" alt='example with float datatype ' width="350"/>
+<img src="https://github.com/cajal/datajoint-plus/blob/main/images/float_ex.png?raw=true" alt='example with float datatype ' width="350"/>
 
 ```python
 # recover hash
