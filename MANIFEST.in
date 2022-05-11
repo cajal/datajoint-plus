@@ -1,0 +1,4 @@
+include requirements.txt
+include README.md
+include LICENSE
+graft datajoint_plus/config/logging/templates
