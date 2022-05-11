@@ -19,6 +19,8 @@ setup(
     author_email='spapadop@bcm.edu',
     license="GNU LGPL",
     packages=find_packages(),
+    include_package_data=True,
+    package_data={'': ['config/logging/templates/*.yml']},
     install_requires=requirements,
     python_requires='~=3.6'
 )
