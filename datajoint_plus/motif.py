@@ -3,7 +3,7 @@ User tables for DataJointPlus Motifs
 """
 from collections import namedtuple
 import inspect
-import logging
+from .logging import getLogger
 import re
 import datajoint as dj
 import numpy as np
@@ -16,7 +16,7 @@ from datajoint_plus.user_tables import UserTable
 from .base import BaseMaster, BasePart
 from .utils import classproperty, safedict, unwrap, wrap
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 
