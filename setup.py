@@ -8,6 +8,9 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'datajoint_plus', 'version.py')) as f:
     exec(f.read())
 
+with open(path.join(here, 'requirements.txt')) as f:
+    requirements = f.read().split()
+
 setup(
     name='datajoint-plus',
     version=__version__,
@@ -16,6 +19,6 @@ setup(
     author_email='spapadop@bcm.edu',
     license="GNU LGPL",
     packages=find_packages(),
-    install_requires=['datajoint==0.12.9', 'envyaml'],
+    install_requires=requirements,
     python_requires='~=3.6'
 )
