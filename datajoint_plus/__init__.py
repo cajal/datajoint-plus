@@ -12,7 +12,7 @@ __all__ = ['__version__',
            'list_schemas', 'config',
            'DataJointPlusModule', 'create_djp_module',
            'reassign_master_attribute', 'add_datajoint_plus',
-           'Lookup', 'Computed', 'Part',
+           'Lookup', 'Computed', 'Part', 'Manual',
            'add_objects', 'check_if_latest_version', 'enable_datajoint_flags',
            'format_table_name', 'split_full_table_name', 'make_store_dict', 'register_externals', 
            'generate_hash', 'validate_and_generate_hash', 'parse_definition', 
@@ -41,7 +41,7 @@ from .heading import parse_definition, reform_definition
 from .logging import LogFileManager, basicConfig, getLogger
 from .schema import DataJointPlusModule, Schema
 from .table import FreeTable as free_table
-from .user_tables import Computed, Lookup, Part
+from .user_tables import Computed, Lookup, Part, Manual
 from .utils import (add_objects, check_if_latest_version,
                     enable_datajoint_flags, format_table_name, make_store_dict,
                     register_externals, split_full_table_name)
