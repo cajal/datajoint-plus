@@ -101,8 +101,10 @@ def format_rows_to_df(rows):
         rows = pd.DataFrame(rows)
     elif isinstance(rows, dict):
         rows = pd.DataFrame([rows])
+    elif isinstance(rows, np.ndarray) and (rows.dtype.fields is not None):
+        rows = pd.DataFrame(rows)
     else:
-        raise ValidationError('Format of rows not recognized. Try a list of dictionaries, a DataJoint expression or a pandas dataframe.')
+        raise ValidationError('Format of rows not recognized. Try a list of dictionaries, a DataJoint expression, a DataJoint fetch object, or a pandas dataframe.')
 
     return rows
 
