@@ -37,8 +37,9 @@ class Schema(dj.Schema):
                     self.tables(full_table_name=key['full_table_name'], action='delete')
         except:
             pass
-
-        self.load_dependencies(force=load_dependencies, verbose=False)
+        
+        if load_dependencies:
+            self.load_dependencies(verbose=False)
 
 
     @classproperty
