@@ -99,7 +99,7 @@ class VirtualModule(types.ModuleType):
         :param add_objects: additional objects to add to the module
         :return: the python module containing classes from the schema object and the table classes
         """
-        super(VirtualModule, self).__init__(name=module_name)
+        super().__init__(name=module_name)
         _schema = Schema(schema_name, create_schema=create_schema, create_tables=create_tables,
                          connection=connection)
         if add_objects:
@@ -139,7 +139,8 @@ class DataJointPlusModule(VirtualModule):
             assert not module, 'Provide either schema_name or module but not both.'
             super().__init__(module_name=module_name if module_name else schema_name, schema_name=schema_name, add_objects=add_objects, create_schema=create_schema, create_tables=create_tables, connection=connection)
             
-            self.load_dependencies(self.__dict__['schema'].connection, load_dependencies, verbose=False)
+            if load_dependencies:
+                self.load_dependencies(verbose=False)
             
         elif module:
             super(dj.VirtualModule, self).__init__(name=module.__name__)
@@ -161,8 +162,9 @@ class DataJointPlusModule(VirtualModule):
             
             if spawn_missing_classes:
                 schema_obj.spawn_missing_classes(context=self.__dict__)
-                
-            self.load_dependencies(schema_obj.connection, load_dependencies, verbose=False)
+            
+            if load_dependencies:
+                self.load_dependencies(verbose=False)
                 
             if add_objects:
                 self.__dict__.update(add_objects)
@@ -178,8 +180,8 @@ class DataJointPlusModule(VirtualModule):
             
         add_datajoint_plus(self)
 
-    def load_dependencies(self, connection, force=True, verbose=True):
+    def load_dependencies(self, verbose=True):
         """
         Loads dependencies into DataJoint networkx graph. 
         """
-        load_dependencies(connection=connection, force=force, verbose=verbose)
+        load_dependencies(connection=self.schema.connection, force=True, verbose=verbose)
