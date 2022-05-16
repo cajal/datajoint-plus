@@ -131,13 +131,14 @@ def load_dependencies(connection, force=False, verbose=True):
         connection.dependencies.load(force=force)
 
 
-def enable_datajoint_flags(enable_python_native_blobs=True):
+def enable_datajoint_flags(enable_python_native_blobs:bool=True):
     """
     Enable experimental datajoint features
     
     These flags are required by 0.12.0+ (for now).
     """
-    config['enable_python_native_blobs'] = enable_python_native_blobs
+    if config['enable_python_native_blobs'] ^ enable_python_native_blobs:
+        config['enable_python_native_blobs'] = enable_python_native_blobs
     _switch_filepath_types(True)
     _switch_adapted_types(True)
 
