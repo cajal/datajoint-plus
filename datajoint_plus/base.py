@@ -580,7 +580,8 @@ class BaseMaster(Base):
 
         :returns: list
         """
-        cls.load_dependencies(force=reload_dependencies)
+        if not cls.connection.dependencies._loaded or reload_dependencies:
+            cls.load_dependencies()
 
         cls_parts = [getattr(cls, d) for d in dir(cls) if inspect.isclass(getattr(cls, d)) and issubclass(getattr(cls, d), dj.Part)]
         for cls_part in [p.full_table_name for p in cls_parts]:
@@ -726,7 +727,8 @@ class BaseMaster(Base):
         :param filter_out_len_zero: (bool) If True, included parts must have greater than zero rows after restriction is applied.
         :param reload_dependencies: (bool) reloads DataJoint graph dependencies.
         """
-        assert cls.has_parts(reload_dependencies=reload_dependencies), 'No part tables found. If you are expecting part tables, try with reload_dependencies=True.'
+        if not cls.has_parts(reload_dependencies=reload_dependencies):
+            logger.warning('No part tables found.')
 
         if include_parts is None:
             parts = cls.parts(as_cls=True)
