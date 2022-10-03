@@ -17,7 +17,7 @@ __all__ = ['__version__',
            'format_table_name', 'split_full_table_name', 'make_store_dict', 'register_externals', 
            'generate_hash', 'validate_and_generate_hash', 'parse_definition', 
            'reform_definition', 'errors', 'free_table', 
-           'basicConfig', 'getLogger', 'LogFileManager']
+           'basicConfig', 'getLogger', 'LogFileManager', 'BaseMaster', 'BasePart', 'UserTable']
 
 
 
@@ -34,6 +34,7 @@ from datajoint.schemas import VirtualModule as DataJointVirtualModule, list_sche
 
 # from DataJointPlus
 from . import errors
+from .base import BaseMaster, BasePart
 from .compatibility import add_datajoint_plus, reassign_master_attribute
 from .config import config
 from .hash import generate_hash, validate_and_generate_hash
@@ -41,7 +42,7 @@ from .heading import parse_definition, reform_definition
 from .logging import LogFileManager, basicConfig, getLogger
 from .schema import DataJointPlusModule, Schema
 from .table import FreeTable as free_table
-from .user_tables import Computed, Lookup, Part, Manual
+from .user_tables import Computed, Lookup, Part, Manual, UserTable
 from .utils import (add_objects, check_if_latest_version,
                     enable_datajoint_flags, format_table_name, make_store_dict,
                     register_externals, split_full_table_name)
