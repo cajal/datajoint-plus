@@ -12,7 +12,6 @@ from .table import TableLog
 from .hash import generate_table_id
 from .utils import classproperty
 from .table import FreeTable
-# from datajoint.schemas import VirtualModule
 
 logger = getLogger(__name__)
 
@@ -140,9 +139,6 @@ class DataJointPlusModule(VirtualModule):
         if schema_name:
             assert not module, 'Provide either schema_name or module but not both.'
             super().__init__(module_name=module_name if module_name else schema_name, schema_name=schema_name, add_objects=add_objects, create_schema=create_schema, create_tables=create_tables, connection=connection)
-
-            if load_dependencies:
-                self.load_dependencies(verbose=False)
             
         elif module:
             super(dj.VirtualModule, self).__init__(name=module.__name__)
@@ -165,9 +161,6 @@ class DataJointPlusModule(VirtualModule):
             if spawn_missing_classes:
                 schema_obj.spawn_missing_classes(context=self.__dict__)
             
-            if load_dependencies:
-                self.load_dependencies(verbose=False)
-                
             if add_objects:
                 self.__dict__.update(add_objects)
         
@@ -179,7 +172,10 @@ class DataJointPlusModule(VirtualModule):
         
         if enable_dj_flags:
             enable_datajoint_flags()
-            
+        
+        if load_dependencies:
+            self.load_dependencies(verbose=False)
+
         add_datajoint_plus(self)
 
     def load_dependencies(self, verbose=True):
