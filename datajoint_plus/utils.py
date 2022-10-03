@@ -9,7 +9,7 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 import requests
-from datajoint.errors import _switch_adapted_types, _switch_filepath_types
+from datajoint.errors import _support_adapted_types, _switch_adapted_types, _support_filepath_types, _switch_filepath_types
 from datajoint.table import QueryExpression
 from datajoint.user_tables import UserTable
 from IPython.display import display
@@ -131,16 +131,20 @@ def load_dependencies(connection, force=False, verbose=True):
         connection.dependencies.load(force=force)
 
 
-def enable_datajoint_flags(enable_python_native_blobs:bool=True):
+def enable_datajoint_flags(enable_python_native_blobs=True, support_adapted_types=True, support_filepath_types=True):
     """
     Enable experimental datajoint features
     
     These flags are required by 0.12.0+ (for now).
     """
-    if config['enable_python_native_blobs'] ^ enable_python_native_blobs:
+    if config['enable_python_native_blobs'] != enable_python_native_blobs:
         config['enable_python_native_blobs'] = enable_python_native_blobs
-    _switch_filepath_types(True)
-    _switch_adapted_types(True)
+    
+    if _support_adapted_types() != support_adapted_types:
+        _switch_adapted_types(support_adapted_types)
+    
+    if _support_filepath_types() != support_filepath_types:
+        _switch_filepath_types(support_filepath_types)
 
 
 def register_externals(external_stores):
