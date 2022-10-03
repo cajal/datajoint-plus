@@ -12,6 +12,7 @@ from .table import TableLog
 from .hash import generate_table_id
 from .utils import classproperty
 from .table import FreeTable
+# from datajoint.schemas import VirtualModule
 
 logger = getLogger(__name__)
 
@@ -22,21 +23,21 @@ class Schema(dj.Schema):
     Additional params:
     :param load_dependencies (bool): Loads the DataJoint graph.
     """
-    def __init__(self, schema_name, context=None, load_dependencies=True, *, connection=None, create_schema=True, create_tables=True):
+    def __init__(self, schema_name, context=None, load_dependencies=False, update_table_log=False, *, connection=None, create_schema=True, create_tables=True):
         super().__init__(schema_name=schema_name, context=context, connection=connection, create_schema=create_schema, create_tables=create_tables)
 
-        # attempt to update ~tables
-        try:
-            self._tables = None
-            for table_name in self.list_tables():
-                full_table_name = reform_full_table_name(self.database, table_name)
-                self.tables(generate_table_id(full_table_name), full_table_name, action='add')
-            for key in self._tables:
-                _, name = split_full_table_name(key['full_table_name'])
-                if name not in self.list_tables():
-                    self.tables(full_table_name=key['full_table_name'], action='delete')
-        except:
-            pass
+        if update_table_log:
+            try:
+                self._tables = None
+                for table_name in self.list_tables():
+                    full_table_name = reform_full_table_name(self.database, table_name)
+                    self.tables(generate_table_id(full_table_name), full_table_name, action='add')
+                for key in self._tables:
+                    _, name = split_full_table_name(key['full_table_name'])
+                    if name not in self.list_tables():
+                        self.tables(full_table_name=key['full_table_name'], action='delete')
+            except:
+                logger.warning('Could not update schema.tables')
         
         if load_dependencies:
             self.load_dependencies(verbose=False)
@@ -88,7 +89,7 @@ class VirtualModule(types.ModuleType):
     A virtual module which will contain context for schema.
     """
     def __init__(self, module_name, schema_name, *, create_schema=False,
-                 create_tables=False, connection=None, add_objects=None):
+                 create_tables=False, connection=None, add_objects=None, load_dependencies=False):
         """
         Creates a python module with the given name from the name of a schema on the server and
         automatically adds classes to it corresponding to the tables in the schema.
@@ -101,8 +102,8 @@ class VirtualModule(types.ModuleType):
         :return: the python module containing classes from the schema object and the table classes
         """
         super().__init__(name=module_name)
-        _schema = Schema(schema_name, create_schema=create_schema, create_tables=create_tables,
-                         connection=connection)
+        _schema = Schema(schema_name, create_schema=create_schema, load_dependencies=load_dependencies, 
+                        create_tables=create_tables, connection=connection)
         if add_objects:
             self.__dict__.update(add_objects)
         self.__dict__['schema'] = _schema
@@ -113,7 +114,7 @@ class DataJointPlusModule(VirtualModule):
     """
     DataJointPlus extension of DataJoint virtual module with the added ability to instantiate from an existing module.
     """
-    def __init__(self, module_name=None, schema_name=None, module=None, schema_obj_name=None, add_externals=None, add_objects=None, create_schema=False, create_tables=False, connection=None, spawn_missing_classes=True, load_dependencies=True, enable_dj_flags=True, warn=True):
+    def __init__(self, module_name=None, schema_name=None, module=None, schema_obj_name=None, add_externals=None, add_objects=None, create_schema=False, create_tables=False, connection=None, spawn_missing_classes=True, load_dependencies=False, enable_dj_flags=True, warn=True):
         """
         Add DataJointPlus methods to all DataJoint user tables in a DataJoint virtual module or to an existing module. 
         
@@ -139,7 +140,7 @@ class DataJointPlusModule(VirtualModule):
         if schema_name:
             assert not module, 'Provide either schema_name or module but not both.'
             super().__init__(module_name=module_name if module_name else schema_name, schema_name=schema_name, add_objects=add_objects, create_schema=create_schema, create_tables=create_tables, connection=connection)
-            
+
             if load_dependencies:
                 self.load_dependencies(verbose=False)
             
