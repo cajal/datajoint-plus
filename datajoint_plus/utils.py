@@ -117,9 +117,11 @@ def load_dependencies(connection, force=False):
     :param connection: (datajoint.connection) DataJoint connection object 
     :param force: (bool) default False. Whether to force reload.
     """
-    logging.INFO('Loading schema dependencies...')
-    connection.dependencies.load()
-    logging.INFO('Schema dependencies loaded.')
+    if connection.dependencies._loaded and not force:
+        return
+    logger.info('Loading schema dependencies...')
+    connection.dependencies.load(force=force)
+    logger.info('Schema dependencies loaded.')
 
 
 def enable_datajoint_flags(enable_python_native_blobs=True, support_adapted_types=True, support_filepath_types=True):
