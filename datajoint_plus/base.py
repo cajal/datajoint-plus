@@ -134,11 +134,11 @@ class Base:
         cls._is_insert_validated = True
 
     @classmethod
-    def load_dependencies(cls, force=True, verbose=True):
+    def load_dependencies(cls, force=True):
         """
         Loads dependencies into DataJoint networkx graph. 
         """
-        load_dependencies(cls.connection, force=force, verbose=verbose)
+        load_dependencies(cls.connection, force=force)
 
 
     @classmethod
@@ -580,6 +580,7 @@ class BaseMaster(Base):
 
         :returns: list
         """
+        # TODO: possibly not needed to reload dependencies if just looking through codebase (as_cls=True)
         if not cls.connection.dependencies._loaded or reload_dependencies:
             cls.load_dependencies()
 

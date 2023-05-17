@@ -5,6 +5,7 @@ import logging
 import re
 import sys
 from unittest import mock
+import os
 
 import numpy as np
 import pandas as pd
@@ -109,26 +110,18 @@ def format_rows_to_df(rows):
     return rows
 
 
-def load_dependencies(connection, force=False, verbose=True):
+def load_dependencies(connection, force=False):
     """
     Loads dependencies in a DataJoint connection object.
 
     :param connection: (datajoint.connection) DataJoint connection object 
     :param force: (bool) default False. Whether to force reload.
     """
-    if verbose:
-        if force:
-            output = Output()
-            display(output)
-            with output:
-                pending_text = Label('Loading schema dependencies...')
-                confirmation = Label('Success.')
-                confirmation.layout.display = 'none'
-                display(HBox([pending_text, confirmation]))
-                connection.dependencies.load()
-                confirmation.layout.display = None
-    else:
-        connection.dependencies.load(force=force)
+    if connection.dependencies._loaded and not force:
+        return
+    logger.info('Loading schema dependencies...')
+    connection.dependencies.load(force=force)
+    logger.info('Schema dependencies loaded.')
 
 
 def enable_datajoint_flags(enable_python_native_blobs=True, support_adapted_types=True, support_filepath_types=True):

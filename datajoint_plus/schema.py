@@ -39,7 +39,7 @@ class Schema(dj.Schema):
                 logger.warning('Could not update schema.tables')
         
         if load_dependencies:
-            self.load_dependencies(verbose=False)
+            self.load_dependencies()
 
 
     @classproperty
@@ -76,11 +76,11 @@ class Schema(dj.Schema):
             raise AttributeError('Provide table_name or full_table_name.')
         return FreeTable(self.connection, full_table_name)
     
-    def load_dependencies(self, force=True, verbose=True):
+    def load_dependencies(self, force=True):
         """
         Loads dependencies into DataJoint networkx graph. 
         """
-        load_dependencies(self.connection, force=force, verbose=verbose)
+        load_dependencies(self.connection, force=force)
 
 
 class VirtualModule(types.ModuleType):
@@ -174,12 +174,12 @@ class DataJointPlusModule(VirtualModule):
             enable_datajoint_flags()
         
         if load_dependencies:
-            self.load_dependencies(verbose=False)
+            self.load_dependencies()
 
         add_datajoint_plus(self)
 
-    def load_dependencies(self, verbose=True):
+    def load_dependencies(self):
         """
         Loads dependencies into DataJoint networkx graph. 
         """
-        load_dependencies(connection=self.schema.connection, force=True, verbose=verbose)
+        load_dependencies(connection=self.schema.connection, force=True)
