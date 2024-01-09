@@ -12,6 +12,7 @@ from .table import TableLog
 from .hash import generate_table_id
 from .utils import classproperty
 from .table import FreeTable
+from .jobs import JobTable
 
 logger = getLogger(__name__)
 
@@ -81,6 +82,16 @@ class Schema(dj.Schema):
         Loads dependencies into DataJoint networkx graph. 
         """
         load_dependencies(self.connection, force=force)
+
+    @property
+    def jobs(self):
+        """
+        schema.jobs provides a view of the job reservation table for the schema
+        :return: jobs table
+        """
+        if self._jobs is None:
+            self._jobs = JobTable(self.connection, self.database)
+        return self._jobs
 
 
 class VirtualModule(types.ModuleType):
