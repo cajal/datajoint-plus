@@ -18,7 +18,7 @@ from datajoint.errors import (
     UnknownAttributeError
 )
 from datajoint.expression import QueryExpression
-from datajoint import blob
+from datajoint_plus import blob
 from datajoint_plus.hash import generate_table_id
 
 from .utils import classproperty, goto
